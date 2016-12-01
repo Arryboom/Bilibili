@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+        <forms>
+        <form url="www.baidu.com">
+            <name>百度</name>
+            <desc>国内搜索引擎</desc>
+        </form>
+
+        <form url="www.google.com">
+            <name>谷歌</name>
+            <desc>国外搜索引擎</desc>
+        </form>
+
+</forms>
