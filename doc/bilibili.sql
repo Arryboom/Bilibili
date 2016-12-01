@@ -2,15 +2,15 @@
 Navicat MySQL Data Transfer
 
 Source Server         : test
-Source Server Version : 50712
-Source Host           : 127.0.0.1:3306
+Source Server Version : 50714
+Source Host           : localhost:3306
 Source Database       : bilibili
 
 Target Server Type    : MYSQL
-Target Server Version : 50712
+Target Server Version : 50714
 File Encoding         : 65001
 
-Date: 2016-07-17 00:10:54
+Date: 2016-08-08 16:11:51
 */
 
 SET FOREIGN_KEY_CHECKS=0;
@@ -51,9 +51,15 @@ CREATE TABLE `aid` (
   `offsite` varchar(255) DEFAULT NULL,
   `typename2` varchar(255) DEFAULT NULL,
   `partid` int(11) DEFAULT NULL,
+  `sp_title` varchar(255) DEFAULT NULL,
   `season_id` int(11) DEFAULT NULL,
   `season_index` varchar(255) DEFAULT NULL,
   `season_episode` varchar(255) DEFAULT NULL,
+  `error` varchar(255) DEFAULT NULL,
+  `link` varchar(255) DEFAULT NULL,
+  `bangumi_id` int(11) DEFAULT NULL,
+  `code` varchar(255) DEFAULT NULL,
+  `acpt` int(11) DEFAULT NULL,
   PRIMARY KEY (`aid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -62,10 +68,11 @@ CREATE TABLE `aid` (
 -- ----------------------------
 DROP TABLE IF EXISTS `aidcid`;
 CREATE TABLE `aidcid` (
-  `aid` int(11) DEFAULT NULL,
+  `aid` int(11) NOT NULL,
   `cid` int(11) NOT NULL,
-  `partid` int(11) DEFAULT NULL,
-  `partname` varchar(255) DEFAULT NULL
+  `partid` int(11) NOT NULL,
+  `partname` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`aid`,`partid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- ----------------------------
@@ -135,11 +142,12 @@ CREATE TABLE `cid` (
 -- ----------------------------
 DROP TABLE IF EXISTS `data`;
 CREATE TABLE `data` (
+  `cid` int(11) NOT NULL,
+  `aid` int(11) DEFAULT NULL,
   `dp_done_mp4` tinyint(1) DEFAULT NULL,
   `letv_vu` varchar(255) DEFAULT NULL,
   `dp_done_flv` tinyint(1) DEFAULT NULL,
   `upload_meta` int(11) DEFAULT NULL,
-  `aid` int(11) DEFAULT NULL,
   `type` varchar(255) DEFAULT NULL,
   `vp` int(11) DEFAULT NULL,
   `upload` int(11) DEFAULT NULL,
@@ -154,7 +162,6 @@ CREATE TABLE `data` (
   `dispatch_servers` int(11) DEFAULT NULL,
   `cache` varchar(255) DEFAULT NULL,
   `storage_server` int(11) DEFAULT NULL,
-  `cid` int(11) NOT NULL,
   `dp_done` tinyint(1) DEFAULT NULL,
   `duration` float DEFAULT NULL,
   `mid` int(11) DEFAULT NULL,

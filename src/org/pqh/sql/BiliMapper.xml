@@ -18,15 +18,15 @@
 		SELECT * FROM aid WHERE aid>#{aid} ORDER BY aid ASC LIMIT 20
 	</select>
 	
-	<select id="getAid" parameterType="int" resultType="int">
-		select bilibili from save where id=#{id}
+	<select id="getAid" resultType="org.pqh.entity.Save">
+		select * from save where id=#{id}
 	</select>
 	
 	<select id="getLimit" parameterType="int" resultType="int">
 		SELECT aid from (SELECT * FROM aid WHERE aid>#{aid} ORDER BY aid ASC LIMIT 20) c ORDER BY aid DESC LIMIT 0,1;
 	</select>
-	<update id="setAid" parameterType="int" >
-		update save set bilibili=#{aid} where id=#{id}
+	<update id="setAid" parameterType="org.pqh.entity.Save">
+		update save set bilibili=#{bilibili},lastUpdateTime=#{lastUpdateTime} where id=#{id}
 	</update>
 	
 	<insert id="insertBili" parameterType="org.pqh.entity.Bili">
@@ -111,5 +111,7 @@
 		update bangumi set season_id=#{season_id},title=#{title},allow_download=#{allow_download} where bangumi_id=#{bangumi_id}
 	</update>
 
-
+	<select id="getLastAid" resultType="int">
+		SELECT ${field} from ${table} ORDER BY ${field} DESC LIMIT 0,1;
+	</select>
 </mapper>

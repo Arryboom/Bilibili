@@ -7,18 +7,14 @@ import org.pqh.util.DownLoadUtil;
  */
 public class TaskShowImg implements Runnable{
     private String message;
-    private String imgPath;
+    private String imgPath="img/";
 
     public TaskShowImg(String message, String imgPath) {
         this.message = message;
-        this.imgPath = imgPath;
+        if(imgPath!=null){
+            this.imgPath = imgPath;
+        }
     }
-
-    public TaskShowImg(String message) {
-        this.message = message;
-        this.imgPath="img/";
-    }
-
 
     public void run() {
        DownLoadUtil.dLWordArt(message,this.imgPath);

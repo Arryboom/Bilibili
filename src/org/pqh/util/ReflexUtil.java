@@ -3,6 +3,7 @@ package org.pqh.util;
 import org.apache.log4j.Logger;
 
 import java.lang.reflect.Field;
+import java.util.Date;
 
 /**反射工具类
  * Created by 10295 on 2016/8/4.
@@ -18,11 +19,11 @@ public class ReflexUtil {
         try {
             return Class.forName(classname).newInstance();
         } catch (InstantiationException e) {
-            TestSlf4j.outputLog(e,log);
+            TestSlf4j.outputLog(e,log,false);
         } catch (IllegalAccessException e) {
-            TestSlf4j.outputLog(e,log);
+            TestSlf4j.outputLog(e,log,false);
         } catch (ClassNotFoundException e) {
-            TestSlf4j.outputLog(e,log);
+            TestSlf4j.outputLog(e,log,false);
         }
         return null;
     }
@@ -45,7 +46,7 @@ public class ReflexUtil {
             }
             return true;
         } catch (IllegalAccessException e) {
-            TestSlf4j.outputLog(e,log);
+            TestSlf4j.outputLog(e,log,false);
         }
         return false;
     }
@@ -64,21 +65,21 @@ public class ReflexUtil {
             try {
                 field = object.getClass().getSuperclass().getDeclaredField(key);
             } catch (NoSuchFieldException e1) {
-                TestSlf4j.outputLog(e1,log);
+                TestSlf4j.outputLog(e,log,false);
             }
         }
         field.setAccessible(true);
-        String type = field.getType().getName();
+        Class type = field.getType();
         try {
-            if (type.equals("java.lang.Integer")) {
+            if (type==Integer.class) {
                 field.set(object, Integer.parseInt(value));
-            } else if (type.equals("java.lang.Long")) {
+            } else if (type==Long.class) {
                 field.set(object, Long.parseLong(value));
-            } else if (type.equals("java.lang.Float")) {
+            } else if (type== Float.class) {
                 field.set(object, Float.parseFloat(value));
-            } else if (type.equals("java.lang.Boolean")) {
+            } else if (type==Boolean.class) {
                 field.set(object, Boolean.parseBoolean(value));
-            } else if (type.equals("java.util.Date")) {
+            } else if (type== Date.class) {
                 if (value.contains(":")) {
                     field.set(object,TimeUtil.formatStringToDate(value,Constant.DATETIME));
                 } else {
@@ -93,12 +94,12 @@ public class ReflexUtil {
                 try {
                     field.set(object,null);
                 } catch (IllegalAccessException e1) {
-                    TestSlf4j.outputLog(e,log);
+                    TestSlf4j.outputLog(e,log,false);
                 }
             }
         }
         catch (IllegalAccessException e) {
-            TestSlf4j.outputLog(e,log);
+            TestSlf4j.outputLog(e,log,false);
         }
         return object;
     }

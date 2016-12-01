@@ -1,7 +1,6 @@
 package org.pqh.entity;
 
 import java.sql.Timestamp;
-import java.util.Comparator;
 
 /**
  * Created by 10295 on 2016/7/3.
@@ -57,7 +56,7 @@ public class AvPlay{
         this.timestamp = timestamp;
     }
 
-    @Override
+
     public String toString() {
         return "AvPlay{" +
                 "title='" + title + '\'' +

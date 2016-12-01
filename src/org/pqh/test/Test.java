@@ -1,11 +1,6 @@
 package org.pqh.test;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-import net.sf.json.util.JSONUtils;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import org.jsoup.nodes.Document;
@@ -17,23 +12,24 @@ import org.pqh.dao.VstorageDao;
 import org.pqh.entity.Data;
 import org.pqh.entity.Param;
 import org.pqh.entity.Vstorage;
-import org.pqh.service.AvCountService;
-import org.pqh.service.InsertService;
 import org.pqh.service.InsertServiceImpl;
+import org.pqh.task.Listener;
+import org.pqh.task.TaskBili;
+import org.pqh.task.TaskCid;
+import org.pqh.task.TaskShowImg;
 import org.pqh.util.*;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import javax.annotation.Resource;
 import java.io.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.*;
+
+import static org.pqh.util.SpringContextHolder.*;
 
 /**
  * Created by Reborn on 2016/2/5.
@@ -42,16 +38,7 @@ import java.util.*;
 @ContextConfiguration("classpath:applicationContext.xml")
 public class Test {
     private static Logger log= TestSlf4j.getLogger(Test.class);
-    @Resource
-    ThreadPoolTaskExecutor threadPoolTaskExecutor;
-    @Resource
-    BiliDao biliDao;
-    @Resource
-    VstorageDao vstorageDao;
-    @Resource
-    InsertService insertService;
-    @Resource
-    AvCountService avCountService;
+
 
     public static void main(String[] args) throws Exception {
 //        FindResourcesUtil.dLQrcode("http://ww3.sinaimg.cn/large/006xdUelgw1f6450qiwjkg30o40dkb2r.gif","C:\\Users\\10295\\OneDrive\\图片\\屏幕快照\\2.jpg","200");
@@ -59,7 +46,10 @@ public class Test {
 //        BiliUtil.formMap.put("msg",TimeUtil.formatDateToString(new Date(),Constant.DATETIME)+"测试");
 //        BiliUtil.cookie=PropertiesUtil.getProperties("baiducookie");
 //        Document document=BiliUtil.jsoupGet(Constant.BduSendMsg,Document.class,Constant.POST);
+         Class.forName(SpringContextHolder.class.getName());
+         new Test().testTask();
     }
+
 
     /**
      * 测试各种方法
@@ -69,19 +59,27 @@ public class Test {
 //        Map<String,List<BtAcg>> map=FindResourcesUtil.findBy_Btacg(threadPoolTaskExecutor,"银魂");
 //        Map<String,String> hrefMap=FindResourcesUtil.screenUrl(map,new BtAcg("BDRIP",null,null));
 //        Map<String,String> map=new HashMap<String, String>();
-//        map.put("title","网球王子");
+//        map.put("title","妖精狩猎者");
 //        map.put("typeid","32,33");
-//        downLoadDanMu(map,"弹幕",2);
-
+//        downLoadDanMu(map,map.get("title"),2);
 
     }
-    @org.junit.Test
+
     public void testTask(){
-        ThreadUtil.threadRun(Test.class,new String[]{"testView","runCrawler"});
-        while(true){
-            ThreadUtil.sleep(log,3600*1000*24);
-        }
+
+        ThreadUtil.threadRun(Test.class,new String[]{"runCrawler"});
+        Listener listener = new Listener();
+        TaskBili taskBili=new TaskBili(insertService,biliDao);
+        taskBili.addObserver(listener);
+        Thread thread=new Thread(taskBili,"thread");
+        thread.start();
+        do{
+            ThreadUtil.sleep(10);
+        }while(!(threadPoolTaskExecutor.getThreadPoolExecutor().getActiveCount()==0&&PropertiesUtil.getProperties("addtask",String.class).equals("0")));
+
     }
+
+
 
     /**
      * 检查ID有效性
@@ -162,7 +160,7 @@ public class Test {
             default:throw new RuntimeException("不存在第"+type+"条查询语句");
         }
         long b=System.currentTimeMillis();
-        log.info("查询耗费时间"+TimeUtil.longTimeFormatString(b-a));
+        log.info("查询耗费时间"+TimeUtil.longTimeFormatString(b-a)+"，查询到"+dataList.size()+"条记录");
         Map<String,List<Data>> listMap=new HashMap<String, List<Data>>();
         for(Data data:dataList){
             String dirname= FindResourcesUtil.switchFileName(data.getTitle());
@@ -182,7 +180,7 @@ public class Test {
                         path+="/"+data.getCid()+"";
                     }
                 }
-                DownLoadUtil.downLoad(Constant.DANMU+data.getCid()+".xml",dirPath+"/"+path+".xml");
+                DownLoadUtil.downLoadDanmu(data.getCid(),dirPath+"/"+path+".xml",true);
             }
             File file=new File(dirPath+"/"+dirName);
             if(file.isDirectory()) {
@@ -191,7 +189,7 @@ public class Test {
                     try {
                         FileUtils.deleteDirectory(file);
                     } catch (IOException e) {
-                        TestSlf4j.outputLog(e,log);
+                        TestSlf4j.outputLog(e,log,false);
                     }
                 }
             }
@@ -236,16 +234,19 @@ public class Test {
     /**
      * 删除旧的备份文件
      * @param date 比较的时间
-     * @param dir 备份文件目录
+     * @param parentDir 备份文件父目录
      */
-    public  static void delOldFile(Date date,String dir){
-        Collection<File> fileList=FileUtils.listFiles(new File(dir),new String[]{"sql"},true);
-        for(File file:fileList){
-            if(FileUtils.isFileOlder(file,date)){
-                log.info("删除旧备份文件"+file.getAbsoluteFile());
-                file.delete();
+    public  static void delOldFile(Date date,String parentDir){
+        for(File subdir:new File(parentDir).listFiles())
+        if(FileUtils.isFileOlder(subdir,date)){
+            try {
+                FileUtils.deleteDirectory(subdir);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
+            log.info("删除旧备份文件"+subdir.getAbsoluteFile());
         }
+
     }
 
     /**
@@ -263,7 +264,7 @@ public class Test {
     }
 
     public static void uploadBdu(String path){
-        String command="G:\\Projects\\bypy\\bypy upload "+path;
+        String command="bypy upload "+path+"\t--downloader aria2\t-d";
         runCommand(command,false);
     }
 
@@ -272,23 +273,17 @@ public class Test {
      */
     public  void saveDataBase(){
         BiliUtil.openImage(new File("WebContent/image/dbbackup.jpg"));
-        ThreadPoolTaskExecutor threadPoolTaskExecutor=SpringContextHolder.getBean("taskExecutor");
         Date date=new Date();
         String date_1=TimeUtil.formatDateToString(date,"HH_mm_ss");
         String date_2=TimeUtil.formatDateToString(date,null);
-        Calendar c=Calendar.getInstance();
-        c.setTime(date);
-        c.add(Calendar.DATE,-1);
-        Date date1=c.getTime();
-        String date_3=TimeUtil.formatDateToString(date1,null);
+
         //当前日期年月日作为备份数据库的目录
         String localPath=PropertiesUtil.getProperties("localPath",String.class);
         String todayDir=localPath+date_2+"\\";
-        //昨天备份文件目录
-        String yesterday=localPath+date_3+"\\";
+
         //当前日期时分秒作为备份数据库文件的文件名
         File sqlFile=new File(todayDir+date_1+".sql");
-        File oldDir=new File(yesterday);
+
         //调用mysqldump备份命令备份数据库
         File batFile=new File(todayDir+date_1+".bat");
         //运行备份命令
@@ -300,23 +295,23 @@ public class Test {
         }
         new File(todayDir).mkdir();
         runCommand("test.bat",true);
-        TaskShowImg taskShowImg=new TaskShowImg("数据库于"+TimeUtil.formatDateToString(new Date(),Constant.DATETIME)+"备份到"+sqlFile.getAbsolutePath());
+        TaskShowImg taskShowImg=new TaskShowImg("数据库于"+TimeUtil.formatDateToString()+"备份到"+sqlFile.getAbsolutePath(),null);
         threadPoolTaskExecutor.execute(taskShowImg);
+
+        String serverPath=PropertiesUtil.getProperties("serverPath",String.class);
         //每天定时打包一次数据库放到服务器
-        File _7zFile=new File(PropertiesUtil.getProperties("serverPath",String.class)+date_2+"\\"+date_1+".7z");
+        File _7zFile=new File(serverPath+date_2+"\\"+date_1+".7z");
         //打包sql文件
         compress(_7zFile,sqlFile);
-        taskShowImg=new TaskShowImg("数据库于"+TimeUtil.formatDateToString(new Date(),Constant.DATETIME)+"打包到"+_7zFile.getAbsolutePath());
+        taskShowImg=new TaskShowImg("数据库于"+TimeUtil.formatDateToString()+"打包到"+_7zFile.getAbsolutePath(),null);
         threadPoolTaskExecutor.execute(taskShowImg);
         //上传sql到百度云
-        uploadBdu(_7zFile.getAbsolutePath());
-        taskShowImg=new TaskShowImg("数据库于"+TimeUtil.formatDateToString(new Date(),Constant.DATETIME)+"上传到百度云");
-        threadPoolTaskExecutor.execute(taskShowImg);
-        File old7zFile=new File(PropertiesUtil.getProperties("serverPath",String.class)+date_3+"\\");
-        //删除旧备份打包文件
-        FileUtils.deleteQuietly(old7zFile);
-        //删除旧备份目录
-        FileUtils.deleteQuietly(oldDir);
+//        uploadBdu(serverPath);
+//        taskShowImg=new TaskShowImg("数据库于"+TimeUtil.formatDateToString()+"上传到百度云",null);
+//        threadPoolTaskExecutor.execute(taskShowImg);
+
+        delOldFile(date,localPath);
+        delOldFile(date,serverPath);
     }
 
     /**
@@ -337,7 +332,7 @@ public class Test {
             br = new BufferedReader(ir);
             String line;
             while ((line = br.readLine()) != null) {
-                if(line.length()>0) {
+                if(line.replaceAll(" ","").length()>0) {
                     log.info(line);
                 }
             }
@@ -345,12 +340,15 @@ public class Test {
             log.info("运行命令花费时间"+TimeUtil.longTimeFormatString(b-a));
 
         } catch (IOException e) {
-            TestSlf4j.outputLog(e,log);
+            TestSlf4j.outputLog(e,log,false);
         }finally {
             try {
-                in.close();
-                ir.close();
-                br.close();
+                if(in!=null)
+                    in.close();
+                if(ir!=null)
+                    ir.close();
+                if(br!=null)
+                    br.close();
                 System.gc();
                 File file=new File(command);
                 if(file.exists()&&flag){
@@ -364,7 +362,7 @@ public class Test {
 
     /**
      * 把json对象存进map里面
-     * @param jsonObject json对象
+     * @param jsonNode json对象
      * @param map json对象转换的实体类字典
      * @param classname 根节点名称
      * @param flag 反射操作对象是否为集合的标记
@@ -372,36 +370,31 @@ public class Test {
      * @param cid
      * @return
      */
-    public Map getMap(JSONObject jsonObject,Map map,String classname,boolean flag,int index,int cid){
-        for(Object key:jsonObject.keySet()) {
-            if (JSONUtils.isArray(jsonObject.get(key))) {
-                JSONArray jsonArray = jsonObject.getJSONArray(key.toString());
-                boolean flag_1=NodeUtil.getChildNode(classname,key.toString()).equals(String.class.getName());
-                classname = flag_1?classname:NodeUtil.getChildNode(classname,key.toString());
-                if(flag_1){
-                    String value=parseByJackson(Constant.VSTORAGEAPI+cid,key.toString());
-                    map.put(classname, ReflexUtil.setObject(map.get(Data.class.getName()), key.toString(),value));
-                    continue;
-                }
-                for (int i=0;i<jsonArray.size();i++) {
+    public Map getMap(JsonNode jsonNode,Map map,String classname,boolean flag,int index,int cid){
+        Iterator<String> iterator=jsonNode.fieldNames();
+        while(iterator.hasNext()) {
+            String key=iterator.next();
+            JsonNode subNode=jsonNode.get(key);
+            if (subNode.isArray()) {
+                classname = NodeUtil.getChildNode(classname,key.toString());
+
+                for (int i=0;i<subNode.size();i++) {
                     index = i;
                     ((List)map.get(classname)).add(ReflexUtil.getObject(classname));
-                    getMap(JSONObject.fromObject(jsonArray.get(i)), map, classname,true,index,cid);
+                    getMap(subNode.get(i), map, classname,true,index,cid);
                     ReflexUtil.setObject(((List)map.get(classname)).get(index),"cid",String.valueOf(cid));
                     ReflexUtil.setObject(((List)map.get(classname)).get(index),"id",String.valueOf(i+1));
                 }
                 classname=NodeUtil.getParentsNode(classname);
-            } else if (JSONUtils.isObject(jsonObject.get(key))&&!jsonObject.get(key).equals(null)) {
-                JSONObject object = jsonObject.getJSONObject(key.toString());
-                JSONObject jsonObject1 = jsonObject;
-                String name = classname;
+            } else if (subNode.isObject()&&subNode!=null) {
+                JsonNode copyNode = jsonNode;
                 classname = NodeUtil.getChildNode(classname,key.toString());
-                getMap(object, map, classname,false,index,cid);
+                getMap(subNode, map, classname,false,index,cid);
                 ReflexUtil.setObject(map.get(classname),"cid",String.valueOf(cid));
-                jsonObject = jsonObject1;
+                jsonNode = copyNode;
                 classname = NodeUtil.getParentsNode(classname);
             } else {
-                String value = jsonObject.get(key).toString();
+                String value = subNode.asText();
                 if(flag){
                     Object o=((List)map.get(classname)).get(index);
                     ReflexUtil.setObject(o, key.toString(), value);
@@ -437,9 +430,9 @@ public class Test {
                 insertMethod = c.getDeclaredMethod("insert" + name, Class.forName(key));
                 updateMethod = c.getDeclaredMethod("update" + name, Class.forName(key));
             } catch (NoSuchMethodException e) {
-                TestSlf4j.outputLog(e,log);
+                TestSlf4j.outputLog(e,log,false);
             } catch (ClassNotFoundException e) {
-                TestSlf4j.outputLog(e,log);
+                TestSlf4j.outputLog(e,log,false);
             }
             if (map.get(key).getClass().getName().contains("List")) {
                 List list = (List) map.get(key);
@@ -461,18 +454,18 @@ public class Test {
                             detailMessage=field.get(e.getTargetException().getCause()).toString();
                             detailMessage=BiliUtil.matchStr(detailMessage,"\\d+\\-\\d+",String.class);
                             if(detailMessage.length()!=0){
-                                log.info("更新"+name+"复合主键："+detailMessage+"信息");
+//                                log.info("更新"+name+"复合主键："+detailMessage+"信息");
                                 updateMethod.invoke(vstorageDao, object);
                             }
                         } catch (NoSuchFieldException e1) {
                             log.error(object+"无法获取详细报错信息！！！");
                         } catch (IllegalAccessException e1) {
-                            TestSlf4j.outputLog(e1,log);
+                            TestSlf4j.outputLog(e,log,false);
                         } catch (InvocationTargetException e1) {
-                            TestSlf4j.outputLog(e1,log);
+                            TestSlf4j.outputLog(e,log,false);
                         }
                     } catch (IllegalAccessException e) {
-                        TestSlf4j.outputLog(e,log);
+                        TestSlf4j.outputLog(e,log,false);
                     }
                 }
 
@@ -484,96 +477,60 @@ public class Test {
                     insertMethod.invoke(vstorageDao, map.get(key));
                 } catch (InvocationTargetException e) {
                     if(e.getTargetException().getClass().equals(DuplicateKeyException.class)){
-                        log.info("更新"+name+"主键："+key+"信息");
+//                        log.info("更新"+name+"主键："+key+"信息");
                     }else{
-                        TestSlf4j.outputLog(e,log);
+                        TestSlf4j.outputLog(e,log,false);
                     }
                 } catch (IllegalAccessException e) {
-                    TestSlf4j.outputLog(e,log);
+                    TestSlf4j.outputLog(e,log,false);
                 }
             }
         }
     }
 
-
-
-    /**
-     * JSONObject把某个key的内容解析错误之后用Jackson去解析
-     * @param url
-     * @param key json属性
-     * @return 返回正确属性值
-     */
-    public static String parseByJackson(String url,String key) {
-        ObjectMapper objectMapper = new ObjectMapper();
-        try {
-            Map data = objectMapper.readValue(new URL(url), Map.class);
-            Map map1 = null;
-            if (data.get("data") != null) {
-                map1 = ((Map) data.get("data"));
-            }
-            if (map1 != null) {
-                return map1.get(key) == null ? "" : map1.get(key).toString();
-            }
-
-        } catch (JsonParseException e) {
-            TestSlf4j.outputLog(e,log);
-        } catch (JsonMappingException e) {
-            TestSlf4j.outputLog(e,log);
-        } catch (MalformedURLException e) {
-            TestSlf4j.outputLog(e,log);
-        } catch (IOException e) {
-            TestSlf4j.outputLog(e,log);
-        }
-        return  null;
+    public int[] getSave(){
+        String str[]=biliDao.getAid(1).getBilibili().split(":");
+        int num[]=new int[2];
+        num[0]=Integer.parseInt(str[0]);
+        num[1]=Integer.parseInt(str[1]);
+        return num;
     }
 
+    public boolean checkRun(){
+        String s1=biliDao.getAid(1).getBilibili();
+        ThreadUtil.sleep(PropertiesUtil.getProperties("errortime",Integer.class));
+        String s2=biliDao.getAid(1).getBilibili();
+        return s1.equals(s2);
+    }
 
     public void addTask(int id,String methodName){
-        final InsertService insertService= SpringContextHolder.getBean("insertServiceImpl");
-        final BiliDao biliDao=SpringContextHolder.getBean("biliDao");
-        final ThreadPoolTaskExecutor threadPoolTaskExecutor=SpringContextHolder.getBean("taskExecutor");
-        TaskCid.insertService=insertService;
-        for (int cid = biliDao.getAid(id);;cid++) {
+        for (int cid = Integer.parseInt(biliDao.getAid(id).getBilibili());; cid++) {
             if(id==2&&InsertServiceImpl.count>=10){
-                cid=biliDao.getAid(id);
                 InsertServiceImpl.count=0;
+                cid=Integer.parseInt(biliDao.getAid(id).getBilibili());
             }else if(id==3&&InsertServiceImpl.count_>=10){
-                cid=biliDao.getAid(id);
                 InsertServiceImpl.count_=0;
+                cid=Integer.parseInt(biliDao.getAid(id).getBilibili());
             }
-            TaskCid taskCid=new TaskCid(cid,methodName);
-            while (threadPoolTaskExecutor.getThreadPoolExecutor().getQueue().size()>100){
-                ThreadUtil.sleep(log,1000);
+            TaskCid taskCid=new TaskCid(insertService,cid,methodName);
+            if(PropertiesUtil.getProperties("addtask",String.class).equals("1")){
+                excute(threadPoolTaskExecutor,taskCid);
+            }else{
+                break;
             }
-            excute(threadPoolTaskExecutor,taskCid);
         }
     }
 
-    @org.junit.Test
     public void runCrawler() {
-        Thread thread_1=new Thread(new Runnable() {
-            @Override
-            public void run() {
-                addTask(3,"insertVstorage");
-            }
-        });
-        Thread thread_2=new Thread(new Runnable() {
-            @Override
-            public void run() {
-                addTask(2,"insertCid");
-            }
-        });
+        Thread thread_1=new Thread(()->{
+            addTask(3,"insertVstorage");
+        },"insertVstorage");
+        Thread thread_2=new Thread(()->{
+            addTask(2,"insertCid");
+        },"insertCid");
         thread_1.start();
         thread_2.start();
     }
-
-    @org.junit.Test
-    public void testView(){
-        InsertService insertService= SpringContextHolder.getBean("insertServiceImpl");
-        BiliDao biliDao=SpringContextHolder.getBean("biliDao");
-        insertService.insertBili(biliDao.getAid(1),1);
-    }
-
 
     /**
      * 多线程执行任务简单封装
@@ -582,7 +539,7 @@ public class Test {
      */
     public void excute(ThreadPoolTaskExecutor threadPoolTaskExecutor,Runnable runnable){
         threadPoolTaskExecutor.execute(runnable);
-        ThreadUtil.sleep(log,100);
+        ThreadUtil.sleep(100l);
     }
 
 

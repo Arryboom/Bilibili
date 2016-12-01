@@ -6,10 +6,8 @@ import org.pqh.dao.BiliDao;
 import org.pqh.entity.Param;
 import org.pqh.test.Test;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import javax.annotation.Resource;
+import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,26 +18,31 @@ import java.util.Properties;
  */
 public class PropertiesUtil {
     private static Logger log= TestSlf4j.getLogger(PropertiesUtil.class);
+    @Resource
+    BiliDao biliDao;
     /**
      * 获取配置文件所有配置项
      * @return
      */
     public static Properties getProperties(){
-        BufferedReader reader=null;
+        InputStream inputStream=null;
+
         try {
-            reader = new BufferedReader(new InputStreamReader(
-                    BiliUtil.class.getResourceAsStream("/config.properties"), "GBK"));
+            String path=BiliUtil.class.getClassLoader().getResource("config.properties").getPath();
+            inputStream=new FileInputStream(path);
             Properties p = new Properties();
-            p.load(reader);
+            p.load(inputStream);
             return p;
         } catch (IOException e) {
-            TestSlf4j.outputLog(e,log);
+            TestSlf4j.outputLog(e,log,false);
             return  null;
         }finally {
             try {
-                reader.close();
+                if (inputStream != null) {
+                    inputStream.close();
+                }
             } catch (IOException e) {
-                TestSlf4j.outputLog(e,log);
+                TestSlf4j.outputLog(e,log,false);
             }
         }
     }
@@ -78,7 +81,7 @@ public class PropertiesUtil {
     public static void updateProperties(String key,String value,String desc){
         try {
             File file=new File("src/config.properties");
-            List<String> strings= FileUtils.readLines(file);
+            List<String> strings= FileUtils.readLines(file,"GBK");
             List<String> _strings=new ArrayList<String>();
             for(String s:strings){
                 if(s.contains(key)){
@@ -100,8 +103,30 @@ public class PropertiesUtil {
         }
     }
 
+    public  void updateProperties(){
+        File file=new File("src/config.properties");
+        try {
+            List<String> strings= FileUtils.readLines(file,"GBK");
+            for(int i=0;i<strings.size();i+=2){
+                String desc=strings.get(i);
+                String str=strings.get(i+1);
+                int index=str.indexOf("=");
+                String key=str.substring(0,index);
+                String value=str.substring(index+1,str.length());
+                Param param=new Param(key,value,desc);
+                if(biliDao.selectParam(key)==null){
+                    biliDao.insertParam(param);
+                }else{
+                    biliDao.updateParam(param);
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     /**
-     * 从数据库创建配置项
+     * 从数据库创建配置文件
      * @param biliDao
      * @param file 生成的配置文件对象
      */
@@ -115,7 +140,7 @@ public class PropertiesUtil {
         try {
             FileUtils.writeLines(file,"GBK",stringList);
         } catch (IOException e) {
-            TestSlf4j.outputLog(e,log);
+            TestSlf4j.outputLog(e,log,false);
         }
     }
 }

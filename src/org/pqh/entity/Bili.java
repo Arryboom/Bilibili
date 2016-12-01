@@ -23,7 +23,7 @@ public class Bili implements Serializable{
 	private String face;
 	private Integer pages;
 	private String instant_server;
-	private Integer created;
+	private Long created;
 	private String created_at;
 	private Integer credit;
 	private Integer coins;
@@ -245,10 +245,10 @@ public class Bili implements Serializable{
 	public void setInstant_server(String instant_server) {
 		this.instant_server = instant_server;
 	}
-	public Integer getCreated() {
+	public Long getCreated() {
 		return created;
 	}
-	public void setCreated(Integer created) {
+	public void setCreated(Long created) {
 		this.created = created;
 	}
 	public String getCreated_at() {
@@ -305,6 +305,50 @@ public class Bili implements Serializable{
 	public void setTypename2(String typename2) {
 		this.typename2 = typename2;
 	}
-	
-	
+
+	@Override
+	public String toString() {
+		return "Bili{" +
+				"aid=" + aid +
+				", tid=" + tid +
+				", typename='" + typename + '\'' +
+				", arctype='" + arctype + '\'' +
+				", play=" + play +
+				", review=" + review +
+				", video_review=" + video_review +
+				", favorites=" + favorites +
+				", title='" + title + '\'' +
+				", allow_bp=" + allow_bp +
+				", allow_feed=" + allow_feed +
+				", allow_download=" + allow_download +
+				", description='" + description + '\'' +
+				", tag='" + tag + '\'' +
+				", pic='" + pic + '\'' +
+				", author='" + author + '\'' +
+				", mid=" + mid +
+				", face='" + face + '\'' +
+				", pages=" + pages +
+				", instant_server='" + instant_server + '\'' +
+				", created=" + created +
+				", created_at='" + created_at + '\'' +
+				", credit=" + credit +
+				", coins=" + coins +
+				", spid=" + spid +
+				", src='" + src + '\'' +
+				", cid=" + cid +
+				", partname='" + partname + '\'' +
+				", offsite='" + offsite + '\'' +
+				", typename2='" + typename2 + '\'' +
+				", partid=" + partid +
+				", sp_title='" + sp_title + '\'' +
+				", season_id='" + season_id + '\'' +
+				", season_index='" + season_index + '\'' +
+				", season_episode='" + season_episode + '\'' +
+				", code='" + code + '\'' +
+				", error='" + error + '\'' +
+				", link='" + link + '\'' +
+				", bangumi_id=" + bangumi_id +
+				", acpt=" + acpt +
+				'}';
+	}
 }

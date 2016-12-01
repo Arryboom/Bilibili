@@ -16,7 +16,7 @@ public class ComparatorAvPlay implements Comparator {
         this.fieldName = fieldName;
     }
 
-    @Override
+
     public int compare(Object o1, Object o2) {
         Field field=null;
         try {
@@ -27,9 +27,9 @@ public class ComparatorAvPlay implements Comparator {
             Double d=Double.parseDouble(o1.toString())-Double.parseDouble(o2.toString());
             return d>0?1:-1;
         } catch (NoSuchFieldException e) {
-            TestSlf4j.outputLog(e,log);
+            TestSlf4j.outputLog(e,log,false);
         } catch (IllegalAccessException e) {
-            TestSlf4j.outputLog(e,log);
+            TestSlf4j.outputLog(e,log,false);
         }
         return 0;
     }

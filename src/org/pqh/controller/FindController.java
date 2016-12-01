@@ -1,6 +1,5 @@
 package org.pqh.controller;
 
-import net.sf.json.JSONObject;
 import org.pqh.dao.BiliDao;
 import org.pqh.entity.Bili;
 import org.pqh.service.AvCountService;
@@ -11,7 +10,6 @@ import org.springframework.web.servlet.ModelAndView;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 import java.util.Map;
 
@@ -25,19 +23,19 @@ public class FindController {
 		int cid=Integer.valueOf(req.getParameter("id"));
 		Bili bili=biliDao.findByCid(cid);
 		req.setAttribute("bili", bili);
-		return "showbili";
+		return "jsp/showbili";
 	}
 	@RequestMapping("/findaid.do")
 	public String findaid(HttpServletRequest req){
 		int aid=Integer.valueOf(req.getParameter("id"));
 		Bili bili=biliDao.findByAid(aid);
 		req.setAttribute("bili", bili);
-		return "showbili";
+		return "jsp/showbili";
 	}
 	@RequestMapping("/findcids.do")
 	public ModelAndView findids(int a,int b){
 		List<Bili> list=biliDao.findCids(a, b);
-		ModelAndView av=new ModelAndView("showbilis");
+		ModelAndView av=new ModelAndView("jsp/showbilis");
 		av.getModel().put("list", list);
 		return av;
 	}
@@ -46,16 +44,16 @@ public class FindController {
 		int aid=Integer.valueOf(req.getParameter("startid"));
 		List<Bili> list=biliDao.findAids(aid);
 		req.setAttribute("list", list);
-		return "showbilis";
+		return "jsp/showbilis";
 	}
 	@RequestMapping("/getAid.do")
 	@ResponseBody
 	public String getAid(int id){
-		return "AID:"+biliDao.getAid(id);
+		return "AID:"+biliDao.getAid(id).getBilibili();
 	}
 	@RequestMapping("/start.do")
 	public String start(){
-		return "redirect:insert.do?aid="+biliDao.getAid(1);
+		return "redirect:insert.do?aid="+biliDao.getAid(1).getBilibili();
 	}
 	@RequestMapping("/findfp.do")
 	public ModelAndView getfp(int a,int b){
@@ -64,17 +62,15 @@ public class FindController {
 		av.getModel().put("list", list);
 		return av;
 	}
-	@RequestMapping(value="/findAvCount.do",produces="text/json;charset=UTF-8")
+	@RequestMapping(value="/findAvCount.do",produces="application/json;charset=UTF-8")
 	@ResponseBody
-	public JSONObject findAvCount(HttpServletResponse response){
-		JSONObject jsonObject=JSONObject.fromObject(avCountService.getAvCount());
-//		response.setCharacterEncoding("UTF-8");
-		return jsonObject;
+	public Map<String, List> findAvCount(){
+		return avCountService.getAvCount();
 	}
 
 	@RequestMapping(value="/findAvPlay.do",produces="application/json;charset=UTF-8")
 	@ResponseBody
-	public Map<String, Object> findAvPlay(HttpServletResponse response) {
+	public Map<String, Object> findAvPlay() {
 		return avCountService.getAvPlay();
 	}
 }

@@ -1,8 +1,7 @@
 package org.pqh.service;
 
-import net.sf.json.JSONArray;
-import net.sf.json.JSONException;
-import net.sf.json.JSONObject;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jsoup.nodes.Document;
 import org.pqh.dao.BiliDao;
 import org.pqh.entity.AvCount;
@@ -15,6 +14,7 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.*;
 
@@ -48,37 +48,36 @@ public class AvCountService {
     public  void setPlays() {
         Timestamp timestamp=new Timestamp(System.currentTimeMillis());
         List<AvPlay> avPlays=new ArrayList<AvPlay>();
-        JSONObject jsonObject = CrawlerUtil.jsoupGet(Constant.BANGUMIAPI,JSONObject.class, Constant.GET);
-        JSONArray jsonArray=jsonObject.getJSONObject("result").getJSONArray("list");
-        for (Object object : jsonArray) {
-            jsonObject=JSONObject.fromObject(object);
-            String bgmid=jsonObject.get("season_id").toString();
-            String title=jsonObject.get("title").toString();
-            Document document= CrawlerUtil.jsoupGet(Constant.BGMIDAPI+bgmid+".ver",Document.class,Constant.GET);
-            String jsonStr=document.body().html();
-            jsonStr=jsonStr.substring(jsonStr.indexOf("{"),jsonStr.lastIndexOf("}"))+"}";
-            jsonObject=JSONObject.fromObject(jsonStr).getJSONObject("result");
-            int newest_ep_index=0;
-            try {
-                newest_ep_index = jsonObject.getInt("newest_ep_index");
-            }catch (JSONException e){
-                continue;
-            }
-            int avgPlay=jsonObject.getInt("play_count")/newest_ep_index;
-            AvPlay avPlay=new AvPlay(title,avgPlay,timestamp);
-            avPlays.add(avPlay);
-        }
-        Collections.sort(avPlays,new ComparatorAvPlay("play"));
-        int ranking=avPlays.size();
-        for(AvPlay avPlay1:avPlays){
-            avPlay1.setRanking(ranking--);
-        }
+        ObjectMapper objectMapper=new ObjectMapper();
+        JsonNode jsonNode=null;
         try {
+            jsonNode=CrawlerUtil.jsoupGet(Constant.BANGUMIAPI,JsonNode.class,Constant.GET);
+            JsonNode arrayNode=jsonNode.get("result").get("list");
+            for (int i=0;i<arrayNode.size();i++) {
+                jsonNode=arrayNode.get(i);
+                String bgmid=jsonNode.get("season_id").toString();
+                String title=jsonNode.get("title").toString();
+                Document document= CrawlerUtil.jsoupGet(Constant.BGMIDAPI+bgmid+".ver",Document.class,Constant.GET);
+                String jsonStr=document.body().html();
+                jsonStr=jsonStr.substring(jsonStr.indexOf("{"),jsonStr.lastIndexOf("}"))+"}";
+                jsonNode=objectMapper.readTree(jsonStr).get("result");
+                int newest_ep_index=0;
+                newest_ep_index = jsonNode.get("newest_ep_index").asInt();
+                int avgPlay=jsonNode.get("play_count").asInt()/newest_ep_index;
+                AvPlay avPlay=new AvPlay(title,avgPlay,timestamp);
+                avPlays.add(avPlay);
+            }
+            Collections.sort(avPlays,new ComparatorAvPlay("play"));
+            int ranking=avPlays.size();
+            for(AvPlay avPlay1:avPlays){
+                avPlay1.setRanking(ranking--);
+            }
             biliDao.insertAvPlay(avPlays);
+        } catch (IOException e) {
+            e.printStackTrace();
         }catch (DuplicateKeyException e){
-            return;
+            e.printStackTrace();
         }
-
     }
 
     public  Map<String,Object> getAvPlay(){

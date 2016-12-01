@@ -17,7 +17,7 @@ public class Dispatch_servers extends BiliModel implements Node{
     private Date done_at;
     private String state;
 
-    @Override
+
     public String toString() {
         return "Dispatch_servers{" +
                 "id="+id+
@@ -37,7 +37,7 @@ public class Dispatch_servers extends BiliModel implements Node{
 
 
 
-    @Override
+
     public String getParents() {
         return Data.class.getName();
     }

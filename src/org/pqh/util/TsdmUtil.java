@@ -1,6 +1,6 @@
 package org.pqh.util;
 
-import net.sf.json.JSONObject;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.log4j.Logger;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -71,7 +71,7 @@ public class TsdmUtil {
     public static String switchZN (String chinese,String font){
         CrawlerUtil.formMap.put("code",chinese);
         CrawlerUtil.formMap.put("operate",font);
-        JSONObject jsonObject=CrawlerUtil.jsoupGet(Constant.ZHCONVERT,JSONObject.class,Constant.POST);
-        return jsonObject.get("text").toString();
+        JsonNode jsonNode=CrawlerUtil.jsoupGet(Constant.ZHCONVERT,JsonNode.class,Constant.POST);
+        return jsonNode.get("text").asText();
     }
 }

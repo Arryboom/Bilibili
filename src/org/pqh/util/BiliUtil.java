@@ -1,6 +1,6 @@
 package org.pqh.util;
 
-import net.sf.json.JSONObject;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.FileFilterUtils;
 import org.apache.log4j.Logger;
@@ -43,6 +43,10 @@ public class BiliUtil {
 	public static List setElement(List<Element> elements,List list,int index){
 		Test test=new Test();
 		for(org.dom4j.Element element:elements){
+			//不需要入库的节点数据
+			if(element.getName().equals("bainianji")){
+				continue;
+			}
 			if(element.elements().size()>0){
 				setElement(element.elements(),list,1);
 			}else{
@@ -60,7 +64,7 @@ public class BiliUtil {
 	 */
 	public static List setView(int aid, int page){
 		if(aidurl==""){
-			aidurl = Constant.AIDAPI+BiliUtil.getAccesskey(PropertiesUtil.getProperties("biliusername",String.class),PropertiesUtil.getProperties("bilipwd",String.class));
+			aidurl = Constant.AIDAPI+"816d1fda0c1fdbb6a44b3dc0de8b579b";
 		}
 		org.dom4j.Document document=null;
 		String url=aidurl+"&id="+aid+"&page="+page;
@@ -77,8 +81,10 @@ public class BiliUtil {
 			if (code.getText().equals("-403") || code.getText().equals("-404")||code.getText().equals("10")) {
 				return null;
 			} else if (code.getText().equals("-503")) {
-				ThreadUtil.sleep(log,3000);
+				ThreadUtil.sleep(TestSlf4j.getLineInfo(),3);
 				return setView(aid, page);
+			}else if(code.getText().equals("-2")){
+				throw new RuntimeException("access key error");
 			}
 		}
 
@@ -181,7 +187,7 @@ public class BiliUtil {
 				throw  new RuntimeException(c.getClass().getName()+"参数类型错误");
 			}
 		}
-		return (T) list;
+		throw new RuntimeException("无法用正则表达式("+regex+")从字符串("+str+")中匹配到任何结果");
 
 	}
 
@@ -212,7 +218,7 @@ public class BiliUtil {
 	 */
 	public static <T>T parseFile(Class<T> tClass,String filepath){
 		try {
-			List<String> strings=FileUtils.readLines(new File(filepath));
+			List<String> strings=FileUtils.readLines(new File(filepath),"UTF-8");
 			T t=tClass.newInstance();
 			for(String s:strings){
 				if(tClass==ArrayList.class){
@@ -223,11 +229,11 @@ public class BiliUtil {
 			}
 			return t;
 		} catch (IOException e) {
-			TestSlf4j.outputLog(e,log);
+			TestSlf4j.outputLog(e,log,false);
 		} catch (InstantiationException e) {
-			TestSlf4j.outputLog(e,log);
+			TestSlf4j.outputLog(e,log,false);
 		} catch (IllegalAccessException e) {
-			TestSlf4j.outputLog(e,log);
+			TestSlf4j.outputLog(e,log,false);
 		}
 		throw new RuntimeException("解析文件出错");
 	}
@@ -243,7 +249,8 @@ public class BiliUtil {
 		List<org.dom4j.Element> forms=xml.getRootElement().elements();
 		for(org.dom4j.Element form:forms){
 			if(form.attribute("url").getStringValue().equals(url)){
-				for(org.dom4j.Element param:form.elements()){
+				List<Element> params=form.elements();
+				for(org.dom4j.Element param:params){
 					map.put(param.getName(),param.getStringValue());
 				}
 				return map;
@@ -260,7 +267,7 @@ public class BiliUtil {
 		try {
 			Runtime.getRuntime().exec("rundll32 c:\\Windows\\System32\\shimgvw.dll,ImageView_Fullscreen "+file.getAbsoluteFile());
 		} catch (IOException e) {
-			TestSlf4j.outputLog(e,log);
+			TestSlf4j.outputLog(e,log,false);
 		}
 	}
 
@@ -303,15 +310,15 @@ public class BiliUtil {
 		try {
 			username= URLEncoder.encode(username,"UTF-8");
 		} catch (UnsupportedEncodingException e) {
-			TestSlf4j.outputLog(e,log);
+			TestSlf4j.outputLog(e,log,false);
 		}
 
-		String cs="appkey=" + appkey +"&captcha=&platform=ios&pwd="+pwd +"&type=json&userid="+username ;
+		String cs="appkey=" + appkey +"&platform=android&pwd="+pwd +"&type=json&userid="+username ;
 		String sign= AlgorithmUtil.MD5(cs+app_secret).toLowerCase();
 
 		String url=Constant.ACCESS_KEY+cs+"&sign="+ sign;
-		JSONObject jsonObject=CrawlerUtil.jsoupGet(url,JSONObject.class,Constant.GET);
-		String code=jsonObject.get("code").toString();
+		JsonNode jsonNode=CrawlerUtil.jsoupGet(url,JsonNode.class,Constant.GET);
+		String code=jsonNode.get("code").asText();
 		if(code.equals("-626")){
 			throw new RuntimeException("账号:"+username+"不存在");
 		}
@@ -319,11 +326,12 @@ public class BiliUtil {
 			throw new RuntimeException("密码:"+pwd+"错误");
 		}
 
-		else if(jsonObject.get("code").toString().equals("0")){
-			return jsonObject.get("access_key").toString();
+		else if(jsonNode.get("code").toString().equals("0")){
+			return jsonNode.get("access_key").toString();
 		}else{
 			throw new RuntimeException("未知错误");
 		}
+
 	}
 
 }

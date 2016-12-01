@@ -38,7 +38,7 @@ public class AlgorithmUtil {
             }
             return new String(str);
         } catch (Exception e) {
-            TestSlf4j.outputLog(e,log);
+            TestSlf4j.outputLog(e,log,false);
             return null;
         }
     }

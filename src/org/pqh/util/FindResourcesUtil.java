@@ -1,25 +1,15 @@
 package org.pqh.util;
 
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-import org.apache.commons.io.FileUtils;
-import org.apache.http.HttpEntity;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.util.EntityUtils;
 import org.apache.log4j.Logger;
-import org.dom4j.DocumentException;
-import org.dom4j.io.SAXReader;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.pqh.entity.BtAcg;
 import org.pqh.entity.ComparatorAvPlay;
-import org.pqh.test.TaskBtacg;
+import org.pqh.task.TaskBtacg;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
-import java.io.*;
 import java.lang.reflect.Field;
-import java.net.URLEncoder;
 import java.util.*;
 
 /**
@@ -96,7 +86,7 @@ public class FindResourcesUtil {
                             break;
                         }
                     } catch (IllegalAccessException e) {
-                        TestSlf4j.outputLog(e,log);
+                        TestSlf4j.outputLog(e,log,false);
                     }
                 }
                 if(flag){
@@ -136,7 +126,7 @@ public class FindResourcesUtil {
                         fields[i].set(btAcg, Constant.BTACGINDEX+td.select("a").attr("href"));
                     }
                 }catch (IllegalAccessException e) {
-                    TestSlf4j.outputLog(e,log);
+                    TestSlf4j.outputLog(e,log,false);
                 }
                 i++;
             }

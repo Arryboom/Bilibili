@@ -32,7 +32,7 @@ public class NodeUtil {
                 }
             }
         } catch (ClassNotFoundException e) {
-            TestSlf4j.outputLog(e,log);
+            TestSlf4j.outputLog(e,log,false);
         }
         return null;
     }
@@ -47,15 +47,15 @@ public class NodeUtil {
             c = Class.forName(classname);
             return c.getMethod("getParents").invoke(c.newInstance()).toString();
         } catch (ClassNotFoundException e) {
-            TestSlf4j.outputLog(e,log);
+            TestSlf4j.outputLog(e,log,false);
         } catch (NoSuchMethodException e) {
-            TestSlf4j.outputLog(e,log);
+            TestSlf4j.outputLog(e,log,false);
         } catch (IllegalAccessException e) {
-            TestSlf4j.outputLog(e,log);
+            TestSlf4j.outputLog(e,log,false);
         } catch (InstantiationException e) {
-            TestSlf4j.outputLog(e,log);
+            TestSlf4j.outputLog(e,log,false);
         } catch (InvocationTargetException e) {
-            TestSlf4j.outputLog(e,log);
+            TestSlf4j.outputLog(e,log,false);
         }
         return null;
     }

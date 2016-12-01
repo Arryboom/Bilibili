@@ -10,8 +10,8 @@ import java.util.List;
 public interface BiliDao {
 	Bili findByCid(int cid);
 	Bili findByAid(int aid);
-	int getAid(int id);
-	void setAid(@Param("aid")int aid,@Param("id")int id);
+	Save getAid(int id);
+	void setAid(Save save);
 	Integer getLimit(int aid);
 	void setLimit(int aid);
 	List<Bili> findAids(int aid);
@@ -48,5 +48,5 @@ public interface BiliDao {
 
 	Bangumi selectBangumi_id(Integer bangumi_id);
 
-
+	int getLastAid(@Param("table") String table,@Param("field") String field);
 }

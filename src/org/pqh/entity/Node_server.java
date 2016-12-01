@@ -13,7 +13,7 @@ public class Node_server implements Node{
     private String domain;
     private String allow_upload;
 
-    @Override
+
     public String toString() {
         return "Node_server{" +
                 "cid=" + cid +
@@ -27,7 +27,7 @@ public class Node_server implements Node{
                 '}';
     }
 
-    @Override
+
     public String getParents() {
         return Upload.class.getName();
     }

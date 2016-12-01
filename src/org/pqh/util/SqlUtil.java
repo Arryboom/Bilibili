@@ -1,7 +1,6 @@
 package org.pqh.util;
 
-import net.sf.json.JSONObject;
-import net.sf.json.util.JSONUtils;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.log4j.Logger;
 import org.pqh.entity.Data;
 import org.pqh.entity.Type;
@@ -10,6 +9,7 @@ import java.io.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -23,13 +23,15 @@ public class SqlUtil {
      * 创建全字段添加语句以及更新语句
      * @param tableName 表名
      * @param primarykey 主键
-     * @param jsonObject 字段
+     * @param jsonNode 字段
      */
-    public static void createSql(String tableName,String primarykey,JSONObject jsonObject){
+    public static void createSql(String tableName,String primarykey,JsonNode jsonNode){
         StringBuffer stringBuffer=new StringBuffer("INSERT INTO "+tableName+" VALUES(");
         StringBuffer stringBuffer1=new StringBuffer("UPDATE "+tableName+" SET ");
         StringBuffer stringBuffer2=new StringBuffer("(");
-        for(Object key:jsonObject.keySet()){
+        Iterator<String> iterator=jsonNode.fieldNames();
+        while(iterator.hasNext()){
+            String key=iterator.next();
             stringBuffer.append("#{"+key+"},");
             stringBuffer2.append(key+",");
             //除了主键之外其他字段更新
@@ -85,15 +87,15 @@ public class SqlUtil {
             }
             bufferedWriter.write("}");
         } catch (FileNotFoundException e) {
-            TestSlf4j.outputLog(e,log);
+            TestSlf4j.outputLog(e,log,false);
         } catch (IOException e) {
-            TestSlf4j.outputLog(e,log);
+            TestSlf4j.outputLog(e,log,false);
         }finally {
             if (bufferedWriter != null) {
                 try {
                     bufferedWriter.close();
                 } catch (IOException e) {
-                    TestSlf4j.outputLog(e,log);
+                    TestSlf4j.outputLog(e,log,false);
                 }
             }
         }
@@ -102,28 +104,31 @@ public class SqlUtil {
 
     /**
      * 根据json对象返回字段key以及字段类型value
-     * @param jsonObject json对象
+     * @param jsonNode json对象
      * @return 返回HashMap键值对
      */
-    public static  Map<String,Map<String,String>> getFieldType(JSONObject jsonObject){
+    public static  Map<String,Map<String,String>> getFieldType(JsonNode jsonNode){
         Map<String,Map<String,String>> map=new HashMap<String, Map<String, String>>();
         //存放字段类型
         Map<String,String> mapType=new HashMap<String, String>();
         //存放数据库数据类型
         Map<String,String> mapSql=new HashMap<String, String>();
-        for(Object key:jsonObject.keySet()){
+        Iterator<String> iterator=jsonNode.fieldNames();
+        while(iterator.hasNext()){
             String typename=null;
-            if(JSONUtils.isBoolean(jsonObject.get(key))){
+            String key=iterator.next();
+            JsonNode subNode=jsonNode.get(key);
+            if(subNode.isBoolean()){
                 typename=Boolean.class.getName();
-            }else if(JSONUtils.isNumber(jsonObject.get(key))&&jsonObject.get(key).toString().contains(".")){
+            }else if(subNode.isNumber()&&subNode.asText().contains(".")){
                 typename =Float.class.getName();
-            }else if(JSONUtils.isNumber(jsonObject.get(key))){
+            }else if(subNode.isNumber()){
                 typename =Integer.class.getName();
-            }else if(checkDate(jsonObject.get(key).toString())){
+            }else if(checkDate(subNode.asText())){
                 typename =Data.class.getName();
-            }else if(JSONUtils.isArray(jsonObject.get(key))){
+            }else if(subNode.isArray()){
                 typename= List.class.getName();
-            }else if(JSONUtils.isObject(jsonObject.get(key))){
+            }else if(subNode.isObject()){
                 typename= Object.class.getName();
             }else{
                 typename= String.class.getName();

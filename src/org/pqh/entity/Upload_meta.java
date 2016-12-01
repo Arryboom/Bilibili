@@ -15,7 +15,7 @@ public class Upload_meta extends BiliModel implements Node{
     private Integer done;
     private Date done_at;
 
-    @Override
+
     public String toString() {
         return "Upload_meta{" +
                 "id="+id+
@@ -31,7 +31,7 @@ public class Upload_meta extends BiliModel implements Node{
                 '}';
     }
 
-    @Override
+
     public String getParents() {
         return Data.class.getName();
     }

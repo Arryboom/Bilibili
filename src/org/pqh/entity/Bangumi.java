@@ -40,4 +40,14 @@ public class Bangumi {
     public void setAllow_download(Integer allow_download) {
         this.allow_download = allow_download;
     }
+
+
+    public String toString() {
+        return "Bangumi{" +
+                "bangumi_id=" + bangumi_id +
+                ", season_id=" + season_id +
+                ", title='" + title + '\'' +
+                ", allow_download=" + allow_download +
+                '}';
+    }
 }

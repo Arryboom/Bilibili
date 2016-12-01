@@ -9,7 +9,7 @@ Mysql5.7<br/>
 开发IDE：<br/>
 IDEA 15<br/>
 部署Web容器：<br/>
-Tomcat7<br/>
+Tomcat<br/>
 ----------------------------------------------<br/>
 <h1 >实现功能：</h1><br/>
 <h2 >1.获取以下三个接口信息并写入数据库</h2><br/>
@@ -17,22 +17,21 @@ Tomcat7<br/>
 接口二：http://interface.bilibili.com/player?id=cid:<br/>
 接口三：http://api.bilibili.com/vstorage/state?cid=<br/>
 然后这三个接口的数据有什么卵用？</br>
+
 <a href="http://ww2.sinaimg.cn/large/005Jr6NYgw1f5x82npzo1g310b0lse8e.gif">接口数据作用一睹为快</a></br>
-就是拿来看视频用的，应该有小伙伴尝试过用黑科技通过aid(AV号)或者cid(弹幕号)下架视频，这些接口就是用</br>
-来收集这些数据的，虽然现在已经有很多好心人分享各种弹幕包，但是资源是在别人手中，资源失效或者不是自</br>
-己想要的那是多尴尬，所以最好的办法就是资源放在自己手中，知道bilibli整个网站视频的数据，想撸什么片就</br>
-撸什么片。目前2016年7月18日为止，数据库入库数据cid有876万条，包括审核不过、被删、下架的数据，所以上</br>
-面 To Love Ru Darkness 2nd 搜这部番剧相关数据用了将近八分钟，当然跟数据库结构没做过优化有关，不过我建议</br>
-弹幕数据提前备份，当然几分钟时间看一下鬼畜什么的一会儿就过去了。</br>
- 
-我每天都有把数据库放到服务器习惯，目前用的OneDriver，<a href="#down">下载链接</a></br>
-本来还想同步到百度云，不过暂时没有想到用java把文件自动上传到网盘的方案，毕竟我只是个菜鸡，如果哪位大神有</br>
-什么办法希望可以指点一二o(*≧▽≦)ツ</br>
+<a href="#down">已经了解到这些数据的作用但只想要爬虫程序目前录入到数据库的数据点这里</a></br>
+看完上面的录制视频就应该明白这些数据是搭配bilibili黑科技食用的，通过aid(AV号)或者cid(弹幕号)看到被和谐的视频，这些接口就是用</br>
+来收集这些数据的，虽然现在网上有很多热心人士分享各种弹幕包，但是资源都不够齐全，或者资源失效无法下载的情况</br>
+所以最好的方法当然就是直接从B站提供的接口把数据爬下来录入数据库了。基本上只要是存在过B站的视频都能找到</br>
+例如：<b>缘之空、日在校园、学园默示录、记忆女神的女儿们、新妹魔王的契约者等</br>
+http://pan.baidu.com/s/1geEizWB</b>不定期更新弹幕库，这个弹幕库不是从数据库里扫出来的，是我自己补番顺便生成的弹幕库</br>
+想要全站弹幕的还是去下载上面的完整数据库吧</br>
+然后还有下面一些比较零碎的功能</br>
 
 <h2 >2.获取天使论坛当季番剧音乐资源</h2><br/>
-<h2 >3.根据关键字获取bt.acg.gg上的动画资源的种子链接</h2><br/>
+<h2 >3.根据关键字获取bt.acg.gg上的动画资源的种子并下载到本地</h2><br/>
 ![image](https://github.com/luffy9412/Bilibili/blob/master/WebContent/image/btacg.png)<br/>
-<h2 >4.对哔哩哔哩201616年7月版权番剧单集平均播放量定时进行统计，                          （相关活动页见：http://www.bilibili.com/html/activity-20160620newbangumi.html）<br/>
+<h2 >4.对哔哩哔哩2016年7月(已过时)版权番剧单集平均播放量定时进行统计，                          （相关活动页见：http://www.bilibili.com/html/activity-20160620newbangumi.html）<br/>
 并用js echart库以图表形式展示</h2><br/>
 <h3 >echart折线图</h3><br/>
 ![image](https://github.com/luffy9412/Bilibili/blob/master/WebContent/image/echart折线图.png)<br/>
@@ -42,11 +41,9 @@ Tomcat7<br/>
 <a href="http://ww2.sinaimg.cn/large/005Jr6NYgw1f5x1fnohh7g30zg0i07wv.gif">echart动态效果</a><br/>
 -----------------------------------------------------------------------------------------------------------------<br/>
 项目初始化：<br/>
-第一步：当然就是Clone项目到本地，自带项目IDEA配置文件，直接用<a href="http://ww4.sinaimg.cn/large/005Jr6NYgw1f5x65v49sag310b0klu0x.gif">IDEA Clone</a>只需要配置好tomcat路径以及jar包路径即可。<a href="http://ww3.sinaimg.cn/large/005Jr6NYgw1f5x1hv77cog30tx0l0b29.gif">IDEA Tomcat配置<a/><br/>
-第二步：<a href="http://pan.baidu.com/s/1mio67Kc">下载项目jar包</a>，这里没有同步到git仓库原因是spring和mybatis框架以及杂七杂八用到的jar包将近20M的体积，不方便clone进行同步，所以另外放到云盘</br>
-jar包下载完后放到项目目录里面，并进行构造路径设置。</br>
-![image](https://github.com/luffy9412/Bilibili/blob/master/WebContent/image/包路径设置.png)
-第三步：用src目录下的bilibili.sql创建数据库<br/>
+第一步：当然就是Clone项目到本地，自带项目IDEA配置文件，直接用<a href="http://ww4.sinaimg.cn/large/005Jr6NYgw1f5x65v49sag310b0klu0x.gif">IDEA Clone</a>只需要配置好tomcat路径即可。<a href="http://ww3.sinaimg.cn/large/005Jr6NYgw1f5x1hv77cog30tx0l0b29.gif">IDEA Tomcat配置<a/><br/>
+第二步：jar包都是用Maven进行管理的，所以项目克隆下来还要从Maven本地仓库/远程仓库中加载jar包。<br/>
+第三步：用doc/bilibili.sql创建数据库<br/>
 ![image](https://github.com/luffy9412/Bilibili/blob/master/WebContent/image/创建数据库.png)<br/>
 如无意外创建完毕表结构应该跟下图一样。
 数据库结构图
@@ -54,16 +51,18 @@ jar包下载完后放到项目目录里面，并进行构造路径设置。</br>
 <a href="http://ww3.sinaimg.cn/large/005Jr6NYgw1f5x22mc4zlg30x40bye81.gif">数据库部分数据展示</a><br/>
 第四步：方法调试<br/>
 ![image](https://github.com/luffy9412/Bilibili/blob/master/WebContent/image/方法测试.png)<br/>
-判断爬虫程序是否正常运行看<a href="http://ww4.sinaimg.cn/large/005Jr6NYgw1f6lnjsvu1rg30yq0mgb2c.gif">save表</a>这个存档表。接口数据正常存入数据库的情况下，里面分别保存的当前爬取进度应该是不断刷新的<br/>
-备注：调试接口一需要配置bilibli账号密码，否则会报错，如图所示：
-![image](https://github.com/luffy9412/Bilibili/blob/master/WebContent/image/bilibili账号密码配置.png)<br/>
+
+判断爬虫程序是否正常运行看<a href="http://ww4.sinaimg.cn/large/005Jr6NYgw1f6lnjsvu1rg30yq0mgb2c.gif">save表</a>
+这个存档表。接口数据正常存入数据库的情况下，里面分别保存的当前爬取进度应该是不断刷新的，现在save加多一个进度最后更新时间字段，<br/>
+如果这个时间比当前时间早十秒以上，那么当前爬虫线程应该出问题了，此时如果不是因为网络问题造成的会触发自动重启线程操作，不过一般也是接口一出问题，因为接口<br/>
+一是限制ip请求速度的。<br/>
+
+
 -------------------------------------------------------------------------------------------------------------------------------------------------<br/>
-
-
 
 数据库打包到OneDriver以及百度云：<br/>
 <a name='down' href='https://1drv.ms/f/s!AqIrS5Y3YYnjg00rhqs5pOw6KO4n'>OneDriver</a><br/>
 <a href='http://pan.baidu.com/s/1kUSnXKN'>百度云</a><br/>
 压缩包解压密码“A班姬路”，也是我贴吧ID,关于项目问题可以<a href="http://tieba.baidu.com/im/pcmsg?from=820363216">私信</a>。<br/>
-数据库如无意外会每天更新一次，视网络情况而定<br/>
+数据库是自动定时备份，默认每天0点备份一次，具体配置项看配置文件https://github.com/luffy9412/Bilibili/blob/master/src/config.properties<br/>
 以上~~~~~~~~~~~~~~~~~~~~~~<br/>

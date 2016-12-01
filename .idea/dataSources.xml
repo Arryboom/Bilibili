@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="DataSourceManagerImpl" format="xml" hash="1486979422">
-    <data-source source="LOCAL" name="MySQL - bilibili@localhost" uuid="165011c6-88f6-4423-8785-d5b33eda7ae4">
+  <component name="DataSourceManagerImpl" format="xml" hash="3540762549">
+    <data-source source="LOCAL" name="MySQL - bilibili@localhost" uuid="0f81cc03-b968-49b2-ae88-2c9aabeb1017">
       <driver-ref>mysql</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>com.mysql.jdbc.Driver</jdbc-driver>
-      <jdbc-url>jdbc:mysql://localhost:3306/bilibili</jdbc-url>
+      <jdbc-url>jdbc:mysql://localhost:3306/bilibili?serverTimezone=UTC</jdbc-url>
       <driver-properties>
         <property name="autoReconnect" value="true" />
         <property name="zeroDateTimeBehavior" value="convertToNull" />

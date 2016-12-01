@@ -55,6 +55,8 @@
 		<!-- ssf自动注入 -->
 	</bean>
 
+
+
 	<context:component-scan base-package="org.pqh"/>
 
 	<mvc:annotation-driven/>
@@ -92,6 +94,14 @@
 	</bean>
 
 
+	<bean id="updateconf"
+		  class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject">
+			<bean class="org.pqh.util.PropertiesUtil" />
+		</property>
+		<property name="targetMethod" value="updateProperties" />
+		<property name="concurrent" value="false" /><!-- 作业并发调度 -->
+	</bean>
 
 	<bean id="cronTrigger"
 				 class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
@@ -112,6 +122,11 @@
 	</bean>
 
 
+	<bean id="cronTrigger3"
+		  class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail" ref="updateconf"></property>
+		<property name="cronExpression" value="0 0/3 * * * ?"></property>
+	</bean>
 
 	<bean id="scheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
 		<property name="triggers">
@@ -119,7 +134,7 @@
 				<ref bean="cronTrigger" />
 				<ref bean="cronTrigger1"/>
 				<ref bean="cronTrigger2"/>
-
+				<ref bean="cronTrigger3"/>
 			</list>
 		</property>
 	</bean>

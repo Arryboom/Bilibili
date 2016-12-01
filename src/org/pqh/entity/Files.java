@@ -12,7 +12,7 @@ public class Files extends BiliModel implements Node {
     private Integer storage_state;
     private String md5;
 
-    @Override
+
     public String toString() {
         return "Files{" +
                 "id="+id+
@@ -27,7 +27,7 @@ public class Files extends BiliModel implements Node {
                 '}';
     }
 
-    @Override
+
     public String getParents() {
         return Data.class.getName();
     }

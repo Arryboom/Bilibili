@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component name="dataSourceStorage">
-  <data-source name="MySQL - bilibili@localhost" uuid="165011c6-88f6-4423-8785-d5b33eda7ae4">
-    <database-info product="MySQL" version="5.7.14-log" jdbc-version="4.0" driver-name="MySQL Connector Java" driver-version="mysql-connector-java-5.1.35 ( Revision: 5fb9c5849535c13917c2cf9baaece6ef9693ef27 )">
+  <data-source name="MySQL - bilibili@localhost" uuid="0f81cc03-b968-49b2-ae88-2c9aabeb1017">
+    <database-info product="MySQL" version="5.7.14-log" jdbc-version="4.1" driver-name="MySQL Connector Java" driver-version="mysql-connector-java-6.0.5 ( Revision: 6e477e32dff18fb4dc102e53f5a68037a9f8762e )">
       <extra-name-characters>#@</extra-name-characters>
       <identifier-quote-string>`</identifier-quote-string>
     </database-info>

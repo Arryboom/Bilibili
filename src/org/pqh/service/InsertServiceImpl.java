@@ -1,6 +1,6 @@
 package org.pqh.service;
 
-import net.sf.json.JSONObject;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.log4j.Logger;
 import org.jsoup.nodes.Document;
 import org.pqh.dao.BiliDao;
@@ -8,14 +8,15 @@ import org.pqh.dao.VstorageDao;
 import org.pqh.entity.Bangumi;
 import org.pqh.entity.Bili;
 import org.pqh.entity.Cid;
+import org.pqh.entity.Save;
 import org.pqh.test.Test;
 import org.pqh.util.*;
-import org.quartz.CronTrigger;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.lang.reflect.Field;
+import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,28 +27,19 @@ public class InsertServiceImpl implements InsertService {
 	private BiliDao biliDao;
 	@Resource
 	private VstorageDao vstorageDao;
-	@Resource
-	private CronTrigger cronTrigger;
-
-	public CronTrigger getCronTrigger() {
-		return cronTrigger;
-	}
-
-	public Integer getTimer(){
-		return Integer.parseInt(cronTrigger.getCronExpression().split(" ")[2].split("/")[1]);
-	}
 
 	public static int count;
 
 	public static int count_;
 
-
-	@Override
-	public void insertBili(int aid,int page) {
+	public void insertBili() {
 		Map<String, Object> map;
 		Bili bili=null;
 		Bangumi bangumi=null;
-
+		Test test=new Test();
+		int num[]=test.getSave();
+		int aid=num[0];
+		int page=num[1];
 		while(true){
 			do{
 				List list=BiliUtil.setView(aid,page);
@@ -57,11 +49,13 @@ public class InsertServiceImpl implements InsertService {
 				bili= (Bili) list.get(0);
 				bangumi= (Bangumi) list.get(1);
 				bili.setAid(aid);
+
 				bili.setTypename2(BiliUtil.getBq(bili.getTypename()));
 				bili.setPartid(page);
 				try{
 					if(page==1){
-						if(bangumi.getBangumi_id()!=null){
+
+						if(bangumi.getBangumi_id()!=null){;
 							bili.setBangumi_id(bangumi.getBangumi_id());
 							biliDao.insertBangumi(bangumi);
 						}
@@ -71,6 +65,8 @@ public class InsertServiceImpl implements InsertService {
 						biliDao.insertBili(bili);
 					}
 					biliDao.insertCid(bili);
+					biliDao.setAid(new Save(1,aid+":"+page,new Timestamp(System.currentTimeMillis())));
+					log.info("最新AV:http://www.bilibili.com/video/av"+aid+"/index_"+page+".html更新于"+TimeUtil.formatDateToString(bili.getCreated()*1000));
 				}
 				catch(DuplicateKeyException e){
 					if(e.getMessage().contains("insertBili")){
@@ -81,13 +77,20 @@ public class InsertServiceImpl implements InsertService {
 					else{
 						biliDao.updateCid(bili);
 					}
+					biliDao.setAid(new Save(1,aid+":"+page,new Timestamp(System.currentTimeMillis())));
 				}
 				page++;
 			}while(page<=bili.getPages());
-			biliDao.setAid(aid,1);
-			aid++;
+
+			if(aid-biliDao.getLastAid("aid","aid")>PropertiesUtil.getProperties("errornum",Integer.class)){
+				aid-=PropertiesUtil.getProperties("errornum",Integer.class);
+			}else{
+				aid++;
+			}
 			page=1;
+
 		}
+
 	}
 
 	public void insertVstorage(Integer cid){
@@ -105,30 +108,33 @@ public class InsertServiceImpl implements InsertService {
 					map.put(c.getName(), c.newInstance());
 				}
 			} catch (ClassNotFoundException e) {
-				TestSlf4j.outputLog(e,log);
+				TestSlf4j.outputLog(e,log,false);
 			} catch (InstantiationException e) {
-				TestSlf4j.outputLog(e,log);
+				TestSlf4j.outputLog(e,log,false);
 			} catch (IllegalAccessException e) {
-				TestSlf4j.outputLog(e,log);
+				TestSlf4j.outputLog(e,log,false);
 			}
 		}
 		String classname = null;
+		JsonNode jsonNode=null;
 		try {
+			String url = Constant.VSTORAGEAPI + cid;
 			classname = Class.forName(classnames[0]).getName();
+			jsonNode=CrawlerUtil.jsoupGet(url,JsonNode.class,Constant.GET);
 		} catch (ClassNotFoundException e) {
-			TestSlf4j.outputLog(e,log);
+			TestSlf4j.outputLog(e,log,false);
 		}
 
-		String url = Constant.VSTORAGEAPI + cid;
-		JSONObject jsonObject = CrawlerUtil.jsoupGet(url,JSONObject.class,Constant.GET);
-		if(jsonObject.get("list")!=null){
+		if(jsonNode.get("list")!=null){
 			count++;
 			return;
 		}
 		Test test=new Test();
-		map = test.getMap(jsonObject, map, classname, false, 0, cid);
+		map = test.getMap(jsonNode, map, classname, false, 0, cid);
 		test.setData(vstorageDao, map);
-		biliDao.setAid(cid, 3);
+		if(!biliDao.getAid(3).getBilibili().equals(cid+"")){
+			biliDao.setAid(new Save(3,cid+"",new Timestamp(System.currentTimeMillis())));
+		}
 
 	}
 
@@ -153,9 +159,11 @@ public class InsertServiceImpl implements InsertService {
 		}catch (DuplicateKeyException e){
 			biliDao.updateC(c);
 		}
-		biliDao.setAid(cid,2);
+		if(!biliDao.getAid(2).getBilibili().equals(cid+"")){
+			biliDao.setAid(new Save(2,cid+"",new Timestamp(System.currentTimeMillis())));
+		}
 	}
-	@Override
+	
 	public void insertLimit(Integer aid) {
 		if(biliDao.count(aid)==20){
 			aid=biliDao.getLimit(aid);

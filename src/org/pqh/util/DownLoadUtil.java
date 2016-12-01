@@ -1,19 +1,18 @@
 package org.pqh.util;
 
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.io.FileUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.util.EntityUtils;
 import org.apache.log4j.Logger;
 import org.dom4j.DocumentException;
-import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
+import org.dom4j.tree.DefaultElement;
 import org.jsoup.nodes.Document;
 
 import java.io.*;
-import java.lang.reflect.Field;
 import java.net.URLEncoder;
 import java.util.*;
 
@@ -36,17 +35,17 @@ public class DownLoadUtil {
         try {
             closeableHttpResponse=CrawlerUtil.doGet(href);
             httpEntity=closeableHttpResponse.getEntity();
-            Class c=httpEntity.getClass().getSuperclass();
-            Field field=c.getDeclaredField("wrappedEntity");
-            field.setAccessible(true);
-            String values=field.get(httpEntity).toString();
-            values=values.substring(values.indexOf("[")+1,values.indexOf("]"));
-            Map<String,String> map=new HashMap<String, String>();
-            for(String value:values.split(",")){
-                map.put(value.split(":")[0],value.split(":")[1].trim());
-            }
+//            Class c=httpEntity.getClass().getSuperclass();
+//            Field field=c.getDeclaredField("wrappedEntity");
+//            field.setAccessible(true);
+//            String values=field.get(httpEntity).toString();
+//            values=values.substring(values.indexOf("[")+1,values.indexOf("]"));
+//            Map<String,String> map=new HashMap<String, String>();
+//            for(String value:values.split(",")){
+//                map.put(value.split(":")[0],value.split(":")[1].trim());
+//            }
             file=new File(outputPath);
-            FileUtils.write(file,"UTF-8");
+            FileUtils.write(file,null,"UTF-8");
             outputStream=new FileOutputStream(file);
             httpEntity.writeTo(outputStream);
 
@@ -54,16 +53,14 @@ public class DownLoadUtil {
             if(e.toString().contains("Connection timed out")){
                 downLoad(href,outputPath);
             }
-        } catch (NoSuchFieldException e) {
-            TestSlf4j.outputLog(e,log);
-        } catch (IllegalAccessException e) {
-            TestSlf4j.outputLog(e,log);
-        } finally {
+        }  finally {
             try {
-                outputStream.close();
+                if(outputStream!=null){
+                    outputStream.close();
+                }
                 EntityUtils.consume(httpEntity);
             } catch (IOException e) {
-                TestSlf4j.outputLog(e,log);
+                TestSlf4j.outputLog(e,log,false);
             }
         }
 
@@ -85,15 +82,17 @@ public class DownLoadUtil {
             httpEntity = CrawlerUtil.doGet(href).getEntity();
             if(href.contains("rolldate")) {
                 file = new File("时间戳.xml");
-                FileUtils.write(file, "UTF-8");
+                FileUtils.write(file,null,"UTF-8");
                 out=new FileOutputStream(file);
                 httpEntity.writeTo(out);
-                List<String> list=FileUtils.readLines(file);
+                List<String> list=FileUtils.readLines(file,"UTF-8");
                 if(list.size()==0){
                     log.error("无法从弹幕编号"+href.replaceAll("\\D","")+"获取到历史弹幕参数");
                     return null;
                 }
-                return (T) JSONArray.fromObject(list).getJSONArray(0);
+                ObjectMapper objectMapper=new ObjectMapper();
+                JsonNode jsonNode=objectMapper.readTree(file);
+                return (T)jsonNode;
             }
             else {
                 in = httpEntity.getContent();
@@ -124,51 +123,58 @@ public class DownLoadUtil {
      * 下载历史弹幕
      * @param cid 弹幕编号
      * @param path 保存路径
+     * @param flag 弹幕密度没达到标准是否下载历史弹幕
      */
-    public static void downLoadDanmu(int cid,String path){
+    public static void downLoadDanmu(int cid,String path,boolean flag){
         int max_count=0;
         int min_count=0;
-        Set<String> set=new HashSet<String>();
+        Set<DefaultElement> set=null;
         String href=Constant.DANMU+cid+".xml";
-        org.dom4j.Element element=DownLoadUtil.downLoadDanmu(href);
-        for(Element d:element.elements("d")){
-            set.add(d.asXML());
+        org.dom4j.Element element=downLoadDanmu(href);
+        if(element==null){
+            log.error("解析弹幕数据出错请尝试自行打开超链接"+href+"进行下载");
+            return;
         }
+        set=new HashSet<DefaultElement>(element.elements("d"));
         max_count=Integer.parseInt(element.element("maxlimit").getStringValue());
         min_count=PropertiesUtil.getProperties("danmu%",Integer.class);
-        if(set.size()<max_count*min_count/100) {
-            JSONArray jsonArray = downLoadDanmu(Constant.DANMU + "rolldate," + cid);
-            if (jsonArray != null) {
-                outer:for (Object object : jsonArray) {
-                    Long timestamp = JSONObject.fromObject(object).getLong("timestamp");
-                    href = Constant.DANMU + "dmroll," + timestamp + "," + cid;
-                    log.info("开始获取" + TimeUtil.formatDateToString(new Date(timestamp * 1000), null) + "历史弹幕");
-                    element = downLoadDanmu(href);
-                    for (Element d : element.elements("d")) {
-                        set.add(d.asXML());
-                        if(set.size()==max_count*min_count/100){
-                            break outer;
-                        }
-                    }
+
+       JsonNode jsonNode = downLoadDanmu(Constant.DANMU + "rolldate," + cid);
+        if (jsonNode != null) {
+            for (int i=0;i<jsonNode.size();i++) {
+                if(!(flag||set.size()<max_count*min_count/100)){
+                    break;
                 }
+                Long timestamp = jsonNode.get(i).get("timestamp").asLong();
+                href = Constant.DANMU + "dmroll," + timestamp + "," + cid;
+                log.info("开始获取" + TimeUtil.formatDateToString(new Date(timestamp * 1000), null) + "历史弹幕");
+                element = downLoadDanmu(href);
+                set.addAll(element.elements("d"));
+
             }
         }
+
         while (element.remove(element.element("d")));
         List<String> list=new ArrayList<String>();
         list.add("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
         list.add("<i>");
-        for(org.dom4j.Element head:element.elements()){
-            list.add(head.asXML());
-        }
-        list.addAll(set);
+        list= addToCollection(list,element.elements());
+        list= addToCollection(list,set);
         list.add("</i>");
         log.info("弹幕厚度:"+set.size()+"条");
         try {
             FileUtils.writeLines(new File(path),"UTF-8",list);
         } catch (IOException e) {
-            TestSlf4j.outputLog(e,log);
+            TestSlf4j.outputLog(e,log,false);
         }
 
+    }
+
+    private static List<String> addToCollection(List<String> list,Collection collection){
+        for(Object e:collection){
+            list.add(((DefaultElement)e).asXML());
+        }
+        return list;
     }
 
     /**
@@ -176,28 +182,27 @@ public class DownLoadUtil {
      * @param text 文字内容
      * @param path 生成路径
      */
-    public static  String dLWordArt(String text, final String path, String cookie){
-        CrawlerUtil.cookie=cookie;
+    public static void dLWordArt(String text,String path){
+        CrawlerUtil.cookie=PropertiesUtil.getProperties("assqqlcookie",String.class);
         Document document= null;
         try {
-            document = CrawlerUtil.jsoupGet(Constant.WORDART+ URLEncoder.encode(text,"GBK"),Document.class, Constant.GET);
+            document = CrawlerUtil.jsoupGet(Constant.WORDART + URLEncoder.encode(text, "GBK"), Document.class, Constant.GET);
+            if(!document.body().html().contains(".jpg")) {
+                log.info("assqqlcookie:" + CrawlerUtil.cookie + "已过期");
+                CrawlerUtil.cookie = CrawlerUtil.doGet(Constant.ASSQQL).getHeaders("Set-Cookie")[0].getValue();
+                PropertiesUtil.updateProperties("assqqlcookie", CrawlerUtil.cookie, null);
+                log.info("assqqlcookie:" + CrawlerUtil.cookie + "更新完毕尝试重新发送请求");
+                document = CrawlerUtil.jsoupGet(Constant.WORDART + URLEncoder.encode(text, "GBK"), Document.class, Constant.GET);
+            }
         } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
+            dLWordArt(text,path);
         }
-        if(document.baseUri().contains(Constant.WORDART)&&!document.body().html().contains(".jpg")){
-            log.info("assqqlcookie:"+CrawlerUtil.cookie+"已过期");
-            cookie=CrawlerUtil.doGet(Constant.ASSQQL).getHeaders("Set-Cookie")[0].getValue();
-            PropertiesUtil.updateProperties("assqqlcookie",cookie,null);
-            log.info("assqqlcookie:"+cookie+"更新完毕尝试重新发送请求");
-            return dLWordArt(text,path,cookie);
-        }
-        String href=Constant.WORDARTPATH+document.body().html();
+        String html=document.body().html();
+        String href=Constant.WORDARTPATH+html.substring(0,html.indexOf(".jpg")+4);
         text=FindResourcesUtil.switchFileName(text);
-        final String jpgPath=path+text+".jpg";
+        String jpgPath=path+text+".jpg";
         downLoad(href,jpgPath);
-//        BiliUtil.openImage(new File(path+"/"+text+".jpg"));
-        System.gc();
-        return jpgPath;
+        BiliUtil.openImage(new File(jpgPath));
     }
 
     /**

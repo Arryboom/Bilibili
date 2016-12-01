@@ -22,7 +22,7 @@ public class Upload implements Node{
     private String state;
     private String error_reason;
 
-    @Override
+
     public String toString() {
         return "Upload{" +
                 "cid=" + cid +
@@ -43,7 +43,7 @@ public class Upload implements Node{
                 '}';
     }
 
-    @Override
+
     public String getParents() {
         return Data.class.getName();
     }

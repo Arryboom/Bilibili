@@ -39,6 +39,15 @@ public class TimeUtil {
         return simpleDateFormat.format(date);
     }
 
+    public static String formatDateToString(){
+        SimpleDateFormat simpleDateFormat=new SimpleDateFormat(Constant.DATETIME);
+        return simpleDateFormat.format(new Date());
+    }
+
+    public static String formatDateToString(long time){
+        return formatDateToString(new Date(time),Constant.DATETIME);
+    }
+
     /**
      * 字符串转日期
      * @param date 日期字符串

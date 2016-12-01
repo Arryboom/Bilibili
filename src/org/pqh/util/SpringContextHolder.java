@@ -1,20 +1,42 @@
 package org.pqh.util;
 
+import org.pqh.dao.BiliDao;
+import org.pqh.dao.VstorageDao;
+import org.pqh.service.AvCountService;
+import org.pqh.service.InsertService;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
+import org.springframework.context.support.AbstractApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+
 /**
  * 以静态变量保存Spring ApplicationContext, 可在任何代码任何地方任何时候中取出ApplicaitonContext. 
  *
  */
-public class SpringContextHolder implements ApplicationContextAware {
+public class SpringContextHolder{
     private static ApplicationContext applicationContext;
 
-    /**
-     * 实现ApplicationContextAware接口的context注入函数, 将其存入静态变量.
-     */
-    public void setApplicationContext(ApplicationContext applicationContext) {
-        SpringContextHolder.applicationContext = applicationContext; // NOSONAR
+    public static BiliDao biliDao;
+    public static InsertService insertService;
+    public static ThreadPoolTaskExecutor threadPoolTaskExecutor;
+    public static VstorageDao vstorageDao;
+    public static AvCountService avCountService;
+    public static AbstractApplicationContext abstractApplicationContext;
+
+    static {
+        abstractApplicationContext=new ClassPathXmlApplicationContext("classpath:applicationContext.xml");
+        applicationContext=abstractApplicationContext;
+        biliDao=SpringContextHolder.getBean("biliDao");
+        insertService=SpringContextHolder.getBean("insertServiceImpl");
+        threadPoolTaskExecutor=SpringContextHolder.getBean("taskExecutor");
+        vstorageDao=SpringContextHolder.getBean("vstorageDao");
+        avCountService=SpringContextHolder.getBean("avCountService");
     }
+
+    public static void close(){
+        abstractApplicationContext.close();
+    }
+
 
     /**
      * 取得存储在静态变量中的ApplicationContext.
