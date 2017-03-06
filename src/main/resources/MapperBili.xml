@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN"      
+ "http://ibatis.apache.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="main.java.org.pqh.dao.BiliDao">
+	<cache type="main.java.org.pqh.redis.RedisCache"/>
+
+	<select id="findByCid" parameterType="int" resultType="main.java.org.pqh.entity.Bili">
+		select * from AID where CID=#{cid}
+	</select>
+
+	<select id="findCids" resultType="main.java.org.pqh.entity.Bili">
+		select * from AID where CID BETWEEN #{startcid} AND #{overcid} ORDER BY CID
+	</select>
+	
+	<select id="findByAid" parameterType="int" resultType="main.java.org.pqh.entity.Bili">
+		select * from AID where AID=#{aid}
+	</select>
+	
+	<select id="findAids" parameterType="int" resultType="main.java.org.pqh.entity.Bili">
+		SELECT * FROM aid WHERE aid>#{aid} ORDER BY aid ASC LIMIT 20
+	</select>
+	
+	<select id="getAid" resultType="main.java.org.pqh.entity.Save">
+		select * from save where id=#{id}
+	</select>
+
+	<update id="setAid" parameterType="main.java.org.pqh.entity.Save">
+		update save set bilibili=#{bilibili},lastUpdateTime=#{lastUpdateTime},latest=#{latest} where id=#{id}
+	</update>
+
+	<update id="setLatest" parameterType="boolean">
+		update save set latest=${latest} where id=#{id}
+	</update>
+
+	<insert id="insertBili" parameterType="main.java.org.pqh.entity.Bili">
+		insert into AID values(#{aid},#{tid},#{typename},#{arctype},#{play},#{review},#{video_review},#{favorites},#{title},#{allow_bp},#{allow_feed},#{allow_download},#{description},#{tag},#{pic},#{author},#{mid},#{face},#{pages},#{instant_server},#{created},#{created_at},#{credit},#{coins},#{spid},#{src},#{cid},#{partname},#{offsite},#{typename2},#{partid},#{sp_title},#{season_id},#{season_index},#{season_episode},#{bangumi_id})
+	</insert>
+
+	<update id="updateBili" parameterType="main.java.org.pqh.entity.Bili">
+		UPDATE aid SET tid=#{tid},typename=#{typename},arctype=#{arctype},play=#{play},review=#{review},video_review=#{video_review},favorites=#{favorites},title=#{title},allow_bp=#{allow_bp},allow_feed=#{allow_feed},allow_download=#{allow_download},description=#{description},tag=#{tag},pic=#{pic},author=#{author},mid=#{mid},face=#{face},pages=#{pages},instant_server=#{instant_server},created=#{created},created_at=#{created_at},credit=#{credit},coins=#{coins},spid=#{spid},src=#{src},cid=#{cid},partname=#{partname},offsite=#{offsite},typename2=#{typename2},partid=#{partid},sp_title=#{sp_title},season_id=#{season_id},season_index=#{season_index},season_episode=#{season_episode},bangumi_id=#{bangumi_id} WHERE aid=#{aid}
+	</update>
+
+	<insert id="insertCid" parameterType="main.java.org.pqh.entity.Bili">
+		insert into AIDCID (partid,partname,aid,cid) values(#{partid},#{partname},#{aid},#{cid})
+	</insert>
+
+	<update id="updateCid" parameterType="main.java.org.pqh.entity.Bili">
+		UPDATE AIDCID set partid=#{partid},partname=#{partname},aid=#{aid} WHERE cid=#{cid}
+	</update>
+
+
+	<select id="count" parameterType="int" resultType="int">
+		SELECT count(*) from (SELECT * FROM aid WHERE aid>#{aid} ORDER BY aid ASC LIMIT 20) c
+	</select>
+	
+	<select id="findVCC" resultType="main.java.org.pqh.entity.Bili">
+		SELECT a.aid,a.title,b.partid,b.partname,b.cid from aid a,aidcid b where a.aid=b.aid AND a.aid BETWEEN #{startaid} AND #{overaid} ORDER BY aid,partid
+	</select>
+
+	<insert id="insertC" parameterType="main.java.org.pqh.entity.Cid">
+		INSERT INTO cid VALUES (#{cid},#{maxlimit},#{chatid},#{server},#{vtype},#{oriurl},#{aid},#{typeid},#{pid},#{click},#{favourites},#{credits},#{coins},#{fw_click},#{duration},#{arctype},#{danmu},#{bottom},#{sinapi},#{acceptguest},#{acceptaccel})
+	</insert>
+
+	<update id="updateC" parameterType="main.java.org.pqh.entity.Cid">
+		UPDATE cid SET maxlimit=#{maxlimit},chatid=#{chatid},server=#{server},vtype=#{vtype},oriurl=#{oriurl},aid=#{aid},typeid=#{typeid},pid=#{pid},click=#{click},favourites=#{favourites},credits=#{credits},coins=#{coins},fw_click=#{fw_click},duration=#{duration},arctype=#{arctype},danmu=#{danmu},bottom=#{bottom},sinapi=#{sinapi},acceptguest=#{acceptguest},acceptaccel=#{acceptaccel} WHERE cid=#{cid}
+	</update>
+
+	<select id="selectAvCount" resultType="main.java.org.pqh.entity.AvCount">
+		SELECT * FROM avcount
+	</select>
+
+	<insert id="insertAvPlay" parameterType="java.util.List">
+		INSERT INTO avplay VALUES<foreach collection="list" item="item" index="index" separator=",">(#{item.title},#{item.play},#{item.timestamp},#{item.ranking})</foreach>
+	</insert>
+
+	<select id="selectAvPlay" resultType="main.java.org.pqh.entity.AvPlay">
+		SELECT * FROM avplay
+	</select>
+
+	<select id="selectRanking" resultType="main.java.org.pqh.entity.Ranking">
+		SELECT timestamp AS `key`,GROUP_CONCAT(title ORDER BY ranking) AS value FROM avplay GROUP BY timestamp ORDER BY timestamp
+	</select>
+
+	<insert id="insertParam">
+		insert into param values(#{key},#{value},#{desc})
+	</insert>
+
+	<update id="updateParam" parameterType="String">
+		update param set value=#{value},`desc`=#{desc} where `key`=#{key}
+	</update>
+
+	<select id="selectParam" parameterType="String" resultType="main.java.org.pqh.entity.Param">
+		select * from param where `key`=#{key}
+	</select>
+
+	<select id="selectParams" resultType="main.java.org.pqh.entity.Param">
+		select * from param
+	</select>
+
+	<insert id="insertBangumi" parameterType="main.java.org.pqh.entity.Bangumi">
+		insert into bangumi values(#{bangumi_id},#{season_id},#{title},#{allow_download})
+	</insert>
+
+	<select id="selectBangumi_id" parameterType="String" resultType="main.java.org.pqh.entity.Bili">
+		SELECT aid,cid,partid,partname,a.bangumi_id,b.title FROM aid a JOIN bangumi b ON a.bangumi_id=b.bangumi_id AND a.bangumi_id in (${bangumi_id})
+	</select>
+
+	<update id="updateBangumi" parameterType="main.java.org.pqh.entity.Bangumi">
+		update bangumi set season_id=#{season_id},title=#{title},allow_download=#{allow_download} where bangumi_id=#{bangumi_id}
+	</update>
+
+	<select id="getLastAid" resultType="int">
+		SELECT ${field} from ${table} ORDER BY ${field} DESC LIMIT 0,1;
+	</select>
+</mapper>
