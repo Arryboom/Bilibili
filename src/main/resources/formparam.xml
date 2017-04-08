@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<forms>
+
+    <!--bilibili刷新token-->
+    <form url="https://passport.bilibili.com/api/oauth2/refreshToken">
+        <access_token></access_token>
+        <appkey></appkey>
+        <build>431000</build>
+        <mobi_app>android</mobi_app>
+        <platform>android</platform>
+        <refresh_token></refresh_token>
+        <ts></ts>
+    </form>
+    <!--bilibili个人信息请求接口-->
+    <form url="https://account.bilibili.com/api/myinfo/v2?">
+        <access_key></access_key>
+        <appkey></appkey>
+        <build>430000</build>
+        <mobi_app>android</mobi_app>
+        <platform>android</platform>
+        <ts></ts>
+    </form>
+    <!--view接口1-->
+    <form url="https://app.bilibili.com/x/v2/view?">
+        <access_key></access_key>
+        <aid></aid>
+        <appkey></appkey>
+        <build>430000</build>
+        <from>1</from>
+        <mobi_app>android</mobi_app>
+        <plat>0</plat>
+        <platform>android</platform>
+        <ts></ts>
+    </form>
+    <!--view接口2-->
+    <form url="http://api.bilibili.com/view?">
+        <access_key></access_key>
+        <appkey></appkey>
+        <id></id>
+        <page></page>
+        <type>xml</type>
+    </form>
+    <!--优酷视频弹幕池接口-->
+   <form url="http://service.danmu.youku.com/pool">
+       <iid></iid>
+       <begin></begin>
+       <ct>1001</ct>
+       <type>1</type>
+   </form>
+
+    <form url="http://pan.baidu.com/api/download">
+        <app_id>250528</app_id>
+        <bdstoken>67268529e17b41727fbfa39f22670fd8</bdstoken>
+        <channel>chunlei</channel>
+        <clienttype>0</clienttype>
+        <fidlist>[88735381392811]</fidlist>
+        <logid>MTQ4ODk1MjQ2OTU5ODAuMzkzNzA0MDI2NzU5MTIwNTM=</logid>
+        <timestamp>1488952437</timestamp>
+        <type>dlink</type>
+        <web>1</web>
+    </form>
+
+    <form url="http://www.bilibili.com/api_proxy?">
+        <app>bangumi</app>
+        <action>get_season_by_tag_v2</action>
+        <tag_id></tag_id>
+        <pqge>1</pqge>
+        <pagesize>999</pagesize>
+        <indexType>1</indexType>
+    </form>
+
+
+</forms>
