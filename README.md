@@ -47,5 +47,5 @@ http://pan.baidu.com/s/1geEizWB</b>不定期更新弹幕库，这个弹幕库不
 数据库打包到OneDriver<br/>
 <a name='down' href='https://1drv.ms/f/s!AqIrS5Y3YYnjg00rhqs5pOw6KO4n'>OneDriver</a><br/>
 压缩包解压密码“A班姬路”，也是我贴吧ID,关于项目问题可以<a href="http://tieba.baidu.com/im/pcmsg?from=820363216">私信</a>。<br/>
-数据库是自动定时备份，默认每天0点和12点各备份一次，具体配置项看<a href="https://github.com/luffy9412/Bilibili/blob/master/src/config.properties">配置文件</a><br/>
+数据库是自动定时备份，默认每天0点和12点各备份一次，具体配置项看<a href="src/main/resources/config.properties">配置文件</a><br/>
 以上~~~~~~~~~~~~~~~~~~~~~~<br/>
