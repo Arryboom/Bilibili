@@ -33,10 +33,10 @@ http://pan.baidu.com/s/1geEizWB</b>不定期更新弹幕库，这个弹幕库不
 项目初始化：<br/>
 第一步：jar包都是用Maven进行管理的，所以项目克隆下来还要从Maven本地仓库/远程仓库中加载jar包。<br/>
 第二步：用<a href="https://github.com/luffy9412/Bilibili/blob/master/doc/bilibili.sql">数据库表创建脚本</a>创建数据库以及表<br/>
-![image](https://github.com/luffy9412/Bilibili/blob/master/WebContent/image/创建数据库.png)<br/>
+![image](blob/master/src/main/webapp/image/创建数据库.png)<br/>
 如无意外创建完毕表结构应该跟下图一样。
 数据库结构图
-![image](https://github.com/luffy9412/Bilibili/blob/master/WebContent/image/数据库结构详解.png)<br/>
+![image](blob/master/src/main/webapp/image/数据库结构详解.png)<br/>
 <a href="http://ww3.sinaimg.cn/large/005Jr6NYgw1f5x22mc4zlg30x40bye81.gif">数据库部分数据展示</a><br/>
 第三步：参数配置<br/>
 如何配置看<a href="https://github.com/luffy9412/Bilibili/blob/master/doc/config.properties配置详细说明.docx">配置文档</a><br/>
