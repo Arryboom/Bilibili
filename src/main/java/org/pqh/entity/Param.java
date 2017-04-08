@@ -1,4 +1,4 @@
-package main.java.org.pqh.entity;
+package org.pqh.entity;
 
 import java.io.Serializable;
 
@@ -9,6 +9,9 @@ public class Param implements Serializable{
     private String key;
     private String value;
     private String desc;
+
+    public Param() {
+    }
 
     public Param(String key, String value, String desc) {
         this.key = key;

@@ -1,12 +1,11 @@
-package main.java.org.pqh.util;
+package org.pqh.util;
 
-import main.java.org.pqh.entity.Param;
-import main.java.org.pqh.test.Test;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
-import main.java.org.pqh.dao.BiliDao;
+import org.pqh.entity.Param;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -16,14 +15,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
+import static org.pqh.util.SpringContextHolder.biliDao;
 /**
  * Created by 10295 on 2016/8/4.
  */
-
+@Component
 public class PropertiesUtil {
-    private static Logger log= TestSlf4j.getLogger(PropertiesUtil.class);
-    @Resource
-    BiliDao biliDao;
+    private static Logger log= Logger.getLogger(PropertiesUtil.class);
 
     /**
      * 获取配置文件所有配置项
@@ -33,13 +31,13 @@ public class PropertiesUtil {
         InputStream inputStream=null;
 
         try {
-            String path=BiliUtil.class.getClassLoader().getResource("config.properties").getPath();
+            String path=PropertiesUtil.class.getClassLoader().getResource("config.properties").getPath();
             inputStream=new FileInputStream(path);
             Properties p = new Properties();
             p.load(inputStream);
             return p;
         } catch (IOException e) {
-            TestSlf4j.outputLog(e,log);
+            LogUtil.outPutLog(LogUtil.getLineInfo(),e);
             return  null;
         }finally {
             try {
@@ -47,9 +45,30 @@ public class PropertiesUtil {
                     inputStream.close();
                 }
             } catch (IOException e) {
-                TestSlf4j.outputLog(e,log);
+                LogUtil.outPutLog(LogUtil.getLineInfo(),e);
             }
         }
+    }
+
+    /**
+     * 自动添加或更新配置项
+     * @param key
+     * @param value
+     * @param desc
+     */
+    public  void createParam(String key,String value,String desc){
+        desc=StringUtil.gbEncoding(desc);
+        Param param=biliDao.selectParam(key);
+        if(param!=null){
+            param.setValue(value);
+            param.setDesc("#"+desc);
+            biliDao.updateParam(param);
+        }else{
+            param=new Param(key,value,"#"+desc);
+            biliDao.insertParam(param);
+        }
+        String path=PropertiesUtil.class.getClassLoader().getResource("config.properties").getPath();
+        PropertiesUtil.createConfig(new File(path));
     }
 
     /**
@@ -82,20 +101,21 @@ public class PropertiesUtil {
      * @param value
      * @param desc
      */
+
     public static void updateProperties(String key,String value,String desc){
         try {
-            String path=BiliUtil.class.getClassLoader().getResource("config.properties").getPath();
+            String path=PropertiesUtil.class.getClassLoader().getResource("config.properties").getPath();
             File file=new File(path);
             List<String> strings= FileUtils.readLines(file,"GBK");
             List<String> _strings=new ArrayList<String>();
             for(String s:strings){
                 if(s.contains(key)){
                     String _value=s.substring(s.indexOf("=")+1);
-                    s=_value.length()>0?s.replace(_value,value):s+value;
+                    s=!_value.isEmpty()?s.replace(_value,value):s+value;
                     int descindex = _strings.size() - 1;
                     String _desc=strings.get(descindex);
                     if(desc!=null) {
-                        _desc=desc="#"+ Test.gbEncoding(desc);
+                        _desc=desc="#"+ StringUtil.gbEncoding(desc);
                         _strings.remove(descindex);
                         _strings.add(desc);
                     }
@@ -108,13 +128,14 @@ public class PropertiesUtil {
         }
     }
 
+    @Scheduled(cron = "0 0/3 * * * ?")
     public  void updateProperties(){
-        String path=BiliUtil.class.getClassLoader().getResource("config.properties").getPath();
+        String path=PropertiesUtil.class.getClassLoader().getResource("config.properties").getPath();
         File file=new File(path);
         try {
             List<String> strings= FileUtils.readLines(file,"GBK");
             for(int i=0;i<strings.size();i+=2){
-                String desc=strings.get(i);
+                String desc=StringUtil.convert(strings.get(i));
                 String str=strings.get(i+1);
                 int index=str.indexOf("=");
                 String key=str.substring(0,index);
@@ -133,20 +154,19 @@ public class PropertiesUtil {
 
     /**
      * 从数据库创建配置文件
-     * @param biliDao
      * @param file 生成的配置文件对象
      */
-    public static void createConfig(BiliDao biliDao, File file){
+    public static void createConfig(File file){
         List<Param> list=biliDao.selectParams();
         List<String> stringList=new ArrayList<String>();
         for(Param param:list){
-            stringList.add(param.getDesc());
+            stringList.add(StringUtil.gbEncoding(param.getDesc()));
             stringList.add(param.getKey()+"="+(param.getValue()!=null?param.getValue():""));
         }
         try {
             FileUtils.writeLines(file,"GBK",stringList);
         } catch (IOException e) {
-            TestSlf4j.outputLog(e,log);
+            LogUtil.outPutLog(LogUtil.getLineInfo(),e);
         }
     }
 }

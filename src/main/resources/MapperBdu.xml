@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN"
+        "http://ibatis.apache.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.pqh.dao.BduDao">
+    <cache type="org.pqh.redis.RedisCache"/>
+
+
+    <select id="selectTsdm" parameterType="String" resultType="org.pqh.entity.Tsdm">
+        SELECT * FROM tsdm WHERE animeName=#{animeName}
+    </select>
+
+    <select id="selectUpdate" parameterType="String" resultType="org.pqh.entity.Tsdm">
+        SELECT * FROM tsdm WHERE updateTime LIKE #{updateTime}
+    </select>
+
+    <select id="selectAllTsdm" resultType="org.pqh.entity.Tsdm">
+        SELECT * FROM tsdm WHERE tsdmUrl!='';
+    </select>
+
+    <insert id="insertTsdm" parameterType="org.pqh.entity.Tsdm">
+        INSERT INTO tsdm (animeName, tsdmUrl, playTime,updateTime,copyright,lastUpdateTime) VALUES (#{animeName},#{tsdmUrl},#{playTime},#{updateTime},#{copyright},#{lastUpdateTime})
+    </insert>
+
+    <update id="updateTsdm" parameterType="org.pqh.entity.Tsdm">
+        UPDATE tsdm SET lastUpdateTime=#{lastUpdateTime},playTime=#{playTime},updateTime=#{updateTime} WHERE animeName=#{animeName}
+    </update>
+
+    <insert id="insertBdu" parameterType="org.pqh.entity.Bdu" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO baiduyun (url, password, `desc`) VALUES (#{url},#{password},#{desc});
+    </insert>
+</mapper>

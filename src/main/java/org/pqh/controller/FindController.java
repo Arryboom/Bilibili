@@ -1,8 +1,8 @@
-package main.java.org.pqh.controller;
+package org.pqh.controller;
 
-import main.java.org.pqh.entity.Bili;
-import main.java.org.pqh.service.AvCountService;
-import main.java.org.pqh.dao.BiliDao;
+import org.pqh.dao.BiliDao;
+import org.pqh.entity.Bili;
+import org.pqh.service.AvCountService;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -53,4 +53,6 @@ public class FindController {
 	public Map<String, Object> findAvPlay() {
 		return avCountService.getAvPlay();
 	}
+
+
 }

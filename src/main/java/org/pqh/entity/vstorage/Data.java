@@ -1,4 +1,4 @@
-package main.java.org.pqh.entity;
+package org.pqh.entity.vstorage;
 
 import java.io.Serializable;
 import java.util.List;
@@ -68,35 +68,15 @@ public class Data implements Serializable,Node{
 
 	@Override
 	public String toString() {
-		return "Data{" +
+		return "{" +
 				"cid=" + cid +
-				", type='" + type + '\'' +
-				", backup_vid='" + backup_vid + '\'' +
-				", letv_vu='" + letv_vu + '\'' +
-				", letv_vid=" + letv_vid +
-				", vid='" + vid + '\'' +
 				", aid=" + aid +
-				", page=" + page +
-				", title='" + title + '\'' +
-				", mid=" + mid +
-				", author='" + author + '\'' +
-				", cover='" + cover + '\'' +
-				", cache='" + cache + '\'' +
-				", dispatch=" + dispatch +
-				", storage=" + storage +
-				", storage_server=" + storage_server +
-				", vp=" + vp +
-				", files=" + files +
-				", dp_done=" + dp_done +
-				", dp_done_flv=" + dp_done_flv +
-				", dp_done_mp4=" + dp_done_mp4 +
-				", dp_done_hdmp4=" + dp_done_hdmp4 +
-				", dispatch_servers=" + dispatch_servers +
-				", subtitle='" + subtitle + '\'' +
-				", upload=" + upload +
-				", upload_meta=" + upload_meta +
-				", duration=" + duration +
-				", letv_addr='" + letv_addr + '\'' +
+				", 分p=" + page +
+				", 标题='" + title + '\'' +
+				", 投稿人id=" + mid +
+				", 投稿人='" + author + '\'' +
+				", 封面图片地址='" + cover + '\'' +
+				", 子标题='" + subtitle + '\'' +
 				'}';
 	}
 

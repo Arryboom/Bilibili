@@ -1,6 +1,6 @@
-package main.java.org.pqh.task;
+package org.pqh.task;
 
-import main.java.org.pqh.util.DownLoadUtil;
+import org.pqh.util.DownLoadUtil;
 
 /**
  * Created by 10295 on 2016/8/8.

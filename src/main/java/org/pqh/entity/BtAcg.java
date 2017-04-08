@@ -1,4 +1,4 @@
-package main.java.org.pqh.entity;
+package org.pqh.entity;
 
 /**
  * Created by 10295 on 2016/7/10.

@@ -1,12 +1,13 @@
-package main.java.org.pqh.util;
+package org.pqh.util;
 
 import org.apache.log4j.Logger;
+import org.jsoup.Connection;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import main.java.org.pqh.entity.BtAcg;
-import main.java.org.pqh.entity.ComparatorAvPlay;
-import main.java.org.pqh.task.TaskBtacg;
+import org.pqh.entity.BtAcg;
+import org.pqh.entity.statistics.ComparatorAvPlay;
+import org.pqh.task.TaskBtacg;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.lang.reflect.Field;
@@ -16,7 +17,7 @@ import java.util.*;
  * Created by 10295 on 2016/7/10.
  */
 public class FindResourcesUtil {
-    private static Logger log=TestSlf4j.getLogger(FindResourcesUtil.class);
+    private static Logger log=Logger.getLogger(FindResourcesUtil.class);
     public static Map<String,List<BtAcg>> map=new HashMap<String, List<BtAcg>>();
     /**
      * 多线程从Btacg搜索关键字资源种子
@@ -50,10 +51,10 @@ public class FindResourcesUtil {
      * @param page 页数
      */
     public static void eachPage(String keyword,int page){
-        Document document = CrawlerUtil.jsoupGet(Constant.btAcgSearch+ keyword + "&page=" + page, Document.class, Constant.GET);
+        Document document = CrawlerUtil.jsoupGet(ApiUrl.btAcgSearch.getUrl(keyword,page), Document.class, Connection.Method.GET);
         if(page==1) {
             String message=document.select(".text_bold").text();
-            System.out.println(message);
+            log.info(message);
             int i=Integer.parseInt(BiliUtil.matchStr(message,"\\d+条",String.class).replaceAll("条",""));
             TaskBtacg.pages=i/30+(i%30==0?0:1);
         }
@@ -86,7 +87,7 @@ public class FindResourcesUtil {
                             break;
                         }
                     } catch (IllegalAccessException e) {
-                        TestSlf4j.outputLog(e,log);
+                        LogUtil.outPutLog(LogUtil.getLineInfo(),e);
                     }
                 }
                 if(flag){
@@ -123,10 +124,10 @@ public class FindResourcesUtil {
                         }
                         fields[i].set(btAcg,text);
                     } else {
-                        fields[i].set(btAcg, Constant.btAcgIndex+td.select("a").attr("href"));
+                        fields[i].set(btAcg, ApiUrl.btAcgIndex.getUrl(td.select("a").attr("href")));
                     }
                 }catch (IllegalAccessException e) {
-                    TestSlf4j.outputLog(e,log);
+                    LogUtil.outPutLog(LogUtil.getLineInfo(),e);
                 }
                 i++;
             }
@@ -142,12 +143,5 @@ public class FindResourcesUtil {
     }
 
 
-    /**
-     * 文件名替换非法字符
-     * @param filename 文件名
-     * @return
-     */
-    public static String switchFileName(String filename){
-        return filename.replaceAll("\\\\","").replaceAll("/","").replaceAll(":","").replaceAll("<","").replaceAll(">","").replaceAll("|","");
-    }
+
 }

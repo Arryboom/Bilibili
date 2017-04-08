@@ -18,8 +18,8 @@
 		<tbody>
 			<tr>
 				<th>${bili.title}</th>
-				<th><a href="http://www.bilibili.com/video/av${bili.aid}">${bili.aid}</a></th>
-				<th><a href="http://www.bilibili.com/video/av${bili.cid}">${bili.cid}</a></th>
+				<th><code href="http://www.bilibili.com/video/av${bili.aid}">${bili.aid}</code></th>
+				<th><code href="http://www.bilibili.com/video/av${bili.cid}">${bili.cid}</code></th>
 			</tr>
 		</tbody>
 	</table>

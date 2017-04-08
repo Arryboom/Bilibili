@@ -24,7 +24,7 @@
 				},
 				tooltip: {
 					trigger: 'item',
-					formatter:'动画：{a}<br/>单集平均播放量：{c}<br/>统计时间：{b}'
+					formatter:'动画：{code}<br/>单集平均播放量：{c}<br/>统计时间：{data}'
 				},
 				legend:{
 					data:[],
@@ -107,7 +107,7 @@
 			myChart.on('magictypechanged',function(params){
 				if(params.currentType=='bar'){
 					option.tooltip.trigger='item';
-					option.tooltip.formatter='动画：{a}<br/>单集平均播放量：{c}<br/>统计时间：{b}';
+					option.tooltip.formatter='动画：{code}<br/>单集平均播放量：{c}<br/>统计时间：{data}';
 				}else{
 					option.tooltip.trigger='axis';
 					option.tooltip.formatter=function(params){

@@ -1,6 +1,6 @@
-package main.java.org.pqh.entity;
+package org.pqh.entity.statistics;
 
-import main.java.org.pqh.util.TimeUtil;
+import org.pqh.util.TimeUtil;
 
 import java.sql.Timestamp;
 
@@ -39,6 +39,6 @@ public class Ranking {
     public Ranking(Timestamp key, String value) {
         this.key = key;
         this.value = value;
-        this.formatTime=TimeUtil.formatDateToString(key,null);
+        this.formatTime=TimeUtil.formatDate(key,null);
     }
 }

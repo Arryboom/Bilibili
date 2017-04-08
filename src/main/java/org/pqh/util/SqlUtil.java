@@ -1,9 +1,9 @@
-package main.java.org.pqh.util;
+package org.pqh.util;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import main.java.org.pqh.entity.Type;
+import org.pqh.entity.Type;
 import org.apache.log4j.Logger;
-import main.java.org.pqh.entity.Data;
+import org.pqh.entity.vstorage.Data;
 
 import java.io.*;
 import java.text.ParseException;
@@ -18,7 +18,7 @@ import java.util.Map;
  * 数据库工具类
  */
 public class SqlUtil {
-    private static Logger log= TestSlf4j.getLogger(SqlUtil.class);
+    private static Logger log= Logger.getLogger(SqlUtil.class);
     /**
      * 创建全字段添加语句以及更新语句
      * @param tableName 表名
@@ -44,7 +44,7 @@ public class SqlUtil {
         stringBuffer.replace(stringBuffer.length()-1,stringBuffer.length(),")");
         stringBuffer1.replace(stringBuffer1.length()-1,stringBuffer1.length()," WHERE "+primarykey+"=#{"+primarykey+"}");
         stringBuffer.insert(stringBuffer.indexOf("VALUES"),stringBuffer2);
-        System.out.println("添加语句：\n"+stringBuffer+"\n更新语句：\n"+stringBuffer1);
+        log.info("添加语句：\n"+stringBuffer+"\n更新语句：\n"+stringBuffer1);
     }
     /**
      * 生成创建表sql
@@ -53,15 +53,15 @@ public class SqlUtil {
      * @param map 存放表字段，字段类型map对象
      */
     public static void createTable(String tablename,String primarykey,Map<String,String> map){
-        System.out.println("创建表语句\nCREATE TABLE `"+tablename+"` (");
+        log.info("创建表语句\nCREATE TABLE `"+tablename+"` (");
         for(String key:map.keySet()){
             if(key.equals(primarykey)){
-                System.out.println("`"+primarykey+"`  int NOT NULL ,");
+                log.info("`"+primarykey+"`  int NOT NULL ,");
             }else{
-                System.out.println("`"+key+"`  "+map.get(key)+" NULL ,");
+                log.info("`"+key+"`  "+map.get(key)+" NULL ,");
             }
         }
-        System.out.println("PRIMARY KEY (`"+primarykey+"`)\n)\n;");
+        log.info("PRIMARY KEY (`"+primarykey+"`)\n)\n;");
     }
     /**
      * 根据文件名，包名，以及字段名字段类型组成的map对象创建一个类文件
@@ -87,15 +87,15 @@ public class SqlUtil {
             }
             bufferedWriter.write("}");
         } catch (FileNotFoundException e) {
-            TestSlf4j.outputLog(e,log);
+            LogUtil.outPutLog(LogUtil.getLineInfo(),e);
         } catch (IOException e) {
-            TestSlf4j.outputLog(e,log);
+            LogUtil.outPutLog(LogUtil.getLineInfo(),e);
         }finally {
             if (bufferedWriter != null) {
                 try {
                     bufferedWriter.close();
                 } catch (IOException e) {
-                    TestSlf4j.outputLog(e,log);
+                    LogUtil.outPutLog(LogUtil.getLineInfo(),e);
                 }
             }
         }
@@ -149,10 +149,10 @@ public class SqlUtil {
      */
     private static boolean checkDate(String date){
         try {
-            new SimpleDateFormat(Constant.DATETIME).parse(date);
+            new SimpleDateFormat(TimeUtil.DATETIME).parse(date);
         } catch (ParseException e) {
             try {
-                new SimpleDateFormat(Constant.DATE).parse(date);
+                new SimpleDateFormat(TimeUtil.DATE).parse(date);
             } catch (ParseException e1) {
                 return false;
             }

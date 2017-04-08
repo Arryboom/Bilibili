@@ -1,6 +1,6 @@
-package main.java.org.pqh.dao;
+package org.pqh.dao;
 
-import main.java.org.pqh.entity.*;
+import org.pqh.entity.vstorage.*;
 import org.springframework.stereotype.Component;
 
 import java.util.List;

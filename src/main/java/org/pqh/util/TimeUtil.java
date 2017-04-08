@@ -1,4 +1,4 @@
-package main.java.org.pqh.util;
+package org.pqh.util;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -8,7 +8,10 @@ import java.util.Date;
 /**
  * Created by 10295 on 2016/8/4.
  */
-public class TimeUtil {
+public class TimeUtil{
+    //日期格式
+    public static final String DATE="yyyy-MM-dd";
+    public static final String DATETIME="yyyy-MM-dd HH:mm:ss";
     /**
      * 毫秒换算几分钟几秒几毫秒
      * @param time 毫秒
@@ -28,25 +31,12 @@ public class TimeUtil {
         }
         return timestr+((time-ms)>0?(time-ms)+"ms":"");
     }
-    /**
-     * 日期转字符串
-     * @param date 日期
-     * @param format 格式
-     * @return
-     */
-    public static String formatDateToString(Date date, String format){
-        SimpleDateFormat simpleDateFormat=new SimpleDateFormat(format!=null?format:Constant.DATE);
-        return simpleDateFormat.format(date);
+
+    public static String formatDate(Date date,String pattern){
+        SimpleDateFormat simpleDateFormat=new SimpleDateFormat(pattern!=null?pattern:DATE);
+        return simpleDateFormat.format(date!=null?date:new Date());
     }
 
-    public static String formatDateToString(){
-        SimpleDateFormat simpleDateFormat=new SimpleDateFormat(Constant.DATETIME);
-        return simpleDateFormat.format(new Date());
-    }
-
-    public static String formatDateToString(long time){
-        return formatDateToString(new Date(time),Constant.DATETIME);
-    }
 
     /**
      * 字符串转日期
@@ -54,8 +44,8 @@ public class TimeUtil {
      * @param format 格式
      * @return
      */
-    public static Date formatStringToDate(String date,String format){
-        SimpleDateFormat simpleDateFormat=new SimpleDateFormat(format!=null?format:Constant.DATE);
+    public static Date parseDate(String date, String format){
+        SimpleDateFormat simpleDateFormat=new SimpleDateFormat(format!=null?format:DATE);
         try {
             return simpleDateFormat.parse(date);
         } catch (ParseException e) {

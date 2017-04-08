@@ -1,6 +1,6 @@
-package main.java.org.pqh.entity;
+package org.pqh.entity.statistics;
 
-import main.java.org.pqh.util.TestSlf4j;
+import org.pqh.util.LogUtil;
 import org.apache.log4j.Logger;
 
 import java.lang.reflect.Field;
@@ -11,7 +11,7 @@ import java.util.Comparator;
  */
 public class ComparatorAvPlay implements Comparator {
     private String fieldName;
-    private static Logger log= TestSlf4j.getLogger(ComparatorAvPlay.class);
+    private static Logger log= Logger.getLogger(ComparatorAvPlay.class);
     public ComparatorAvPlay(String fieldName) {
         this.fieldName = fieldName;
     }
@@ -27,9 +27,9 @@ public class ComparatorAvPlay implements Comparator {
             Double d=Double.parseDouble(o1.toString())-Double.parseDouble(o2.toString());
             return d>0?1:-1;
         } catch (NoSuchFieldException e) {
-            TestSlf4j.outputLog(e,log);
+            LogUtil.outPutLog(LogUtil.getLineInfo(),e);
         } catch (IllegalAccessException e) {
-            TestSlf4j.outputLog(e,log);
+            LogUtil.outPutLog(LogUtil.getLineInfo(),e);
         }
         return 0;
     }

@@ -1,14 +1,18 @@
-package main.java.org.pqh.util;
+package org.pqh.util;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.FileFilterUtils;
 import org.apache.log4j.Logger;
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
-import main.java.org.pqh.entity.Bangumi;
-import main.java.org.pqh.entity.Bili;
-import main.java.org.pqh.test.Test;
+import org.jsoup.Connection;
+import org.pqh.entity.Bangumi;
+import org.pqh.entity.Bili;
+import org.pqh.test.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,10 +20,27 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static org.pqh.util.SpringContextHolder.biliDao;
 public class BiliUtil {
 
-	private static Logger log=TestSlf4j.getLogger(BiliUtil.class);
+	private static Logger log=Logger.getLogger(BiliUtil.class);
 	private static org.dom4j.Document xml= null;
+	private static JsonNode jsonNode;
+	private static String access_token;
+	private static String appkey;
+	private static String app_secret;
+	static {
+		ObjectMapper objectMapper=new ObjectMapper();
+		objectMapper.enable(JsonParser.Feature.ALLOW_COMMENTS);
+		try {
+			jsonNode=objectMapper.readTree(new File(BiliUtil.class.getClassLoader().getResource("region.json").getPath()));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		access_token=biliDao.selectParam("access_token").getValue();
+		appkey=biliDao.selectParam("appkey").getValue();
+		app_secret=biliDao.selectParam("app_secret").getValue();
+	}
 
 	/**
 	 * 把xml节点值通过反射注入到不同对象
@@ -52,14 +73,14 @@ public class BiliUtil {
 	 */
 	public static List setView(int aid, int page){
 		Queue<String> strings=new LinkedList<String>();
-		strings.offer(PropertiesUtil.getProperties("access_token",String.class));
-		strings.offer(PropertiesUtil.getProperties("appkey",String.class));
+		strings.offer(access_token);
+		strings.offer(appkey);
 		strings.offer(aid+"");
 		strings.offer(page+"");
-		Map<String,String> map=parseXml(strings,Constant.aidApi);
+		Map<String,String> map=parseXml(strings,ApiUrl.AID.getUrl());
 		org.dom4j.Document document=null;
-		String url= Constant.aidApi+map.get("params");
-		document = CrawlerUtil.jsoupGet(url, org.dom4j.Document.class,Constant.GET);
+		String url= ApiUrl.AID.getUrl(map.get("params"));
+		document = CrawlerUtil.jsoupGet(url, org.dom4j.Document.class, Connection.Method.GET);
 		if(document==null){
 			return null;
 		}
@@ -72,16 +93,32 @@ public class BiliUtil {
 			if (code.getText().equals("-403") || code.getText().equals("-404")||code.getText().equals("10")) {
 				return null;
 			} else if (code.getText().equals("-503")) {
-				ThreadUtil.sleep(TestSlf4j.getLineInfo(),3);
+				ThreadUtil.sleep(LogUtil.getLineInfo()+"\n"+code.getText(),3);
 				return setView(aid, page);
 			}else if(code.getText().equals("-2")){
-				TestSlf4j.errorLog(log,"当前配置项access_key已过期，请从配置文件更新access_key",true);
+				log.info("access_key已过期，发送access_key续期请求");
+				JsonNode jsonNode=CrawlerUtil.jsoupGet(ApiUrl.accessKey.getUrl(access_token), JsonNode.class,Connection.Method.GET);
+				log.info(jsonNode);
+				if(jsonNode.get("code").equals("0")){
+					long expires = jsonNode.get("expires").asLong();
+					log.info("access_key续期到" + TimeUtil.formatDate(new Date(expires), null));
+				}else{
+					log.info(jsonNode.get("message").asText());
+					String updateKey = "";
+					do {
+						ThreadUtil.sleep("access_key续期失败，请手动到数据库更新access_key", 30);
+						updateKey = biliDao.selectParam("access_token").getValue();
+					} while (updateKey.equals(access_token));
+					access_token = updateKey;
+				}
+				return setView(aid, page);
 			}
-		}
 
+		}
 		list=setElement(element.elements(),list,0);
 		return list;
 	}
+
 
 	/**
 	 * 根据视频二级分类返回一级分类
@@ -89,48 +126,17 @@ public class BiliUtil {
 	 * @return
 	 */
 	public static String getBq(String type){
-		if(checkbq(type, Constant.dougan)){
-			return "动画";
-		}else if(checkbq(type, Constant.bangumi)){
-			return "番剧";
-		}else if(checkbq(type, Constant.music)){
-			return "音乐";
-		}else if(checkbq(type, Constant.dance)){
-			return "舞蹈";
-		}else if(checkbq(type, Constant.game)){
-			return "游戏";
-		}else if(checkbq(type, Constant.technology)){
-			return "科技";
-		}else if(checkbq(type, Constant.ent)){
-			return "娱乐";
-		}else if(checkbq(type, Constant.kichiku)){
-			return "鬼畜";
-		}else if(checkbq(type, Constant.movie)){
-			return "电影";
-		}else if(checkbq(type, Constant.teleplay)){
-			return "电视剧";
-		}else if(checkbq(type, Constant.fashion)){
-			return "时尚";
-		}else{
-			return null;
-		}
-	}
 
-	/**
-	 *
-	 * @param em 二级分类
-	 * @param list 二级分类列表
-	 * @return 二级分类若存在返回true,否则返回flase
-	 */
-	private static boolean checkbq(String em,String[] list){
-		for(String ems:list){
-			if(em.equals(ems)){
-				return true;
+		for(JsonNode node:jsonNode){
+			String name=node.findValue("name").asText();
+			for(JsonNode node1:node.findValue("children")){
+				if(type.equals(node1.get("name").asText())){
+					return name;
+				}
 			}
 		}
-		return false;
+		return null;
 	}
-
 
 
 	/**
@@ -166,68 +172,34 @@ public class BiliUtil {
 	 * @return
 	 */
 	public static <T>T matchStr(String str,String regex,Class<T> c){
-		List list=new ArrayList();
 		Pattern pattern = Pattern.compile(regex);
 		Matcher matcher = pattern.matcher(str);
+		String s=null;
+		List<String> list=null;
 		while (matcher.find()) {
+			s=matcher.group();
+			log.info("匹配结果"+s);
 			if(c==String.class) {
-				return (T) matcher.group();
+				return (T)s;
 			}else if(c==List.class){
-				list.add(matcher.group());
-			}else{
-				throw  new RuntimeException(c.getClass().getName()+"参数类型错误");
-			}
-		}
-		throw new RuntimeException("无法用正则表达式("+regex+")从字符串("+str+")中匹配到任何结果");
-
-	}
-
-	/**
-	 * 正则表达式匹配内容以外的结果
-	 * @param str 匹配字符串
-	 * @param regexs 正则表达式数组
-	 * @param regex
-	 * @return
-	 */
-	public static String matchStr(String str,String []regexs,String regex){
-		for(int i=0;i<regexs.length;i++) {
-			Pattern pattern = Pattern.compile(regexs[i]);
-			Matcher matcher = pattern.matcher(str);
-			while (matcher.find()) {
-				return matcher.group().replaceAll(regex, "");
-			}
-		}
-		return "";
-	}
-
-	/**
-	 *从文件解析数据
-	 * @param tClass
-	 * @param filepath
-	 * @param <T>
-	 * @return
-	 */
-	public static <T>T parseFile(Class<T> tClass,String filepath){
-		try {
-			List<String> strings=FileUtils.readLines(new File(filepath),"UTF-8");
-			T t=tClass.newInstance();
-			for(String s:strings){
-				if(tClass==ArrayList.class){
-					((ArrayList) t).add(s);
-				}else if(tClass==HashMap.class){
-					((HashMap) t).put(s.split(":")[0],s.split(":")[1]);
+				if(list==null){
+					list=new ArrayList<>();
 				}
+				list.add(s);
 			}
-			return t;
-		} catch (IOException e) {
-			TestSlf4j.outputLog(e,log);
-		} catch (InstantiationException e) {
-			TestSlf4j.outputLog(e,log);
-		} catch (IllegalAccessException e) {
-			TestSlf4j.outputLog(e,log);
 		}
-		throw new RuntimeException("解析文件出错");
+		if(s==null){
+			return null;
+		}else if(c==String.class){
+			return (T) s;
+		}else if(c==List.class){
+			return (T) list;
+		}else{
+			return null;
+		}
+
 	}
+
 
 	public static Map<String,String> parseXml(Queue<String> strings,String url){
 		Map<String,String> map=new HashMap<String, String>();
@@ -247,7 +219,7 @@ public class BiliUtil {
 				String params_="";
 				for(org.dom4j.Element param:params){
 					String value="";
-					if(param.getStringValue().length()>0){
+					if(!param.getStringValue().isEmpty()){
 						value=param.getStringValue();
 					}else if(strings!=null){
 						value=strings.poll();
@@ -258,7 +230,7 @@ public class BiliUtil {
 					map.put(param.getName(),value);
 				}
 				params_=params_.substring(0,params_.length()-1);
-				String sign=AlgorithmUtil.MD5(params_+PropertiesUtil.getProperties("app_secret",String.class)).toLowerCase();
+				String sign=AlgorithmUtil.MD5(params_+app_secret).toLowerCase();
 				params_+="&sign="+sign;
 				map.put("sign",sign);
 				map.put("params",params_);
@@ -268,47 +240,5 @@ public class BiliUtil {
 		throw new RuntimeException("找不到"+url+"的表单参数");
 	}
 
-	/**
-	 * 调用window图片查看器打开图片
-	 * @param file 图片文件对象
-	 */
-	public static void openImage(File file){
-		try {
-			Runtime.getRuntime().exec("rundll32 c:\\Windows\\System32\\shimgvw.dll,ImageView_Fullscreen "+file.getAbsoluteFile());
-		} catch (IOException e) {
-			TestSlf4j.outputLog(e,log);
-		}
-	}
-
-	/**
-	 * 获取Accesskey
-	 * @return
-	 */
-//	public static String getAccesskey() {
-//		String username=PropertiesUtil.getProperties("biliusername",String.class);
-//		String pwd=PropertiesUtil.getProperties("bilipwd",String.class);
-//		if ("".equals(username) || "".equals(pwd)) {
-//			throw new RuntimeException("bilibili账号和密码不能为空");
-//		}
-//
-//		String appkey= PropertiesUtil.getProperties("appkey",String.class);
-//		String	app_secret= PropertiesUtil.getProperties("app_secret",String.class);
-//		try {
-//			username= URLEncoder.encode(username,"UTF-8");
-//		} catch (UnsupportedEncodingException e) {
-//			TestSlf4j.outputLog(e,log);
-//		}
-//
-//		Queue<String> strings = new LinkedList<String>();
-//		strings.offer(appkey);
-//		strings.offer(System.currentTimeMillis()+"");
-//		Map<String,String> map=parseXml(strings,Constant.PUBLICKEYAPI);
-//
-//		JsonNode jsonNode=CrawlerUtil.jsoupGet(Constant.PUBLICKEYAPI+map.get("params"),JsonNode.class,Constant.POST);
-//		String publicKey=jsonNode.get("data").get("key").asText();
-//
-//		return publicKey;
-//
-//	}
 
 }

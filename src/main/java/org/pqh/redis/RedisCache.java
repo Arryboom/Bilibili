@@ -1,9 +1,8 @@
-package main.java.org.pqh.redis;
+package org.pqh.redis;
 
 import org.apache.ibatis.cache.Cache;
 import org.apache.log4j.Logger;
-import main.java.org.pqh.util.AlgorithmUtil;
-import main.java.org.pqh.util.TestSlf4j;
+import org.pqh.util.AlgorithmUtil;
 import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.data.redis.serializer.JdkSerializationRedisSerializer;
@@ -18,7 +17,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public class RedisCache implements Cache {
 
-    private static Logger log= TestSlf4j.getLogger(RedisCache.class);
+    private static Logger log= Logger.getLogger(RedisCache.class);
 
     private static JedisConnectionFactory jedisConnectionFactory;
 

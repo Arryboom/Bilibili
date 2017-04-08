@@ -1,4 +1,4 @@
-package main.java.org.pqh.util;
+package org.pqh.util;
 
 import org.apache.log4j.Logger;
 
@@ -10,7 +10,7 @@ import java.lang.reflect.InvocationTargetException;
  * 节点工具类
  */
 public class NodeUtil {
-    private static Logger log= TestSlf4j.getLogger(NodeUtil.class);
+    private static Logger log= Logger.getLogger(NodeUtil.class);
     /**
      * 获取子节点
      * @param classname
@@ -32,7 +32,7 @@ public class NodeUtil {
                 }
             }
         } catch (ClassNotFoundException e) {
-            TestSlf4j.outputLog(e,log);
+            LogUtil.outPutLog(LogUtil.getLineInfo(),e);
         }
         return null;
     }
@@ -47,15 +47,15 @@ public class NodeUtil {
             c = Class.forName(classname);
             return c.getMethod("getParents").invoke(c.newInstance()).toString();
         } catch (ClassNotFoundException e) {
-            TestSlf4j.outputLog(e,log);
+            LogUtil.outPutLog(LogUtil.getLineInfo(),e);
         } catch (NoSuchMethodException e) {
-            TestSlf4j.outputLog(e,log);
+            LogUtil.outPutLog(LogUtil.getLineInfo(),e);
         } catch (IllegalAccessException e) {
-            TestSlf4j.outputLog(e,log);
+            LogUtil.outPutLog(LogUtil.getLineInfo(),e);
         } catch (InstantiationException e) {
-            TestSlf4j.outputLog(e,log);
+            LogUtil.outPutLog(LogUtil.getLineInfo(),e);
         } catch (InvocationTargetException e) {
-            TestSlf4j.outputLog(e,log);
+            LogUtil.outPutLog(LogUtil.getLineInfo(),e);
         }
         return null;
     }

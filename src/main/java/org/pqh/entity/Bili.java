@@ -1,4 +1,6 @@
-package main.java.org.pqh.entity;
+package org.pqh.entity;
+
+import org.pqh.util.ApiUrl;
 
 import java.io.Serializable;
 
@@ -270,45 +272,9 @@ public class Bili implements Serializable{
 		this.typename2 = typename2;
 	}
 
+
 	@Override
 	public String toString() {
-		return "Bili{" +
-				"aid=" + aid +
-				", tid=" + tid +
-				", typename='" + typename + '\'' +
-				", arctype='" + arctype + '\'' +
-				", play=" + play +
-				", review=" + review +
-				", video_review=" + video_review +
-				", favorites=" + favorites +
-				", title='" + title + '\'' +
-				", allow_bp=" + allow_bp +
-				", allow_feed=" + allow_feed +
-				", allow_download=" + allow_download +
-				", description='" + description + '\'' +
-				", tag='" + tag + '\'' +
-				", pic='" + pic + '\'' +
-				", author='" + author + '\'' +
-				", mid=" + mid +
-				", face='" + face + '\'' +
-				", pages=" + pages +
-				", instant_server='" + instant_server + '\'' +
-				", created=" + created +
-				", created_at='" + created_at + '\'' +
-				", credit=" + credit +
-				", coins=" + coins +
-				", spid=" + spid +
-				", src='" + src + '\'' +
-				", cid=" + cid +
-				", partname='" + partname + '\'' +
-				", offsite='" + offsite + '\'' +
-				", typename2='" + typename2 + '\'' +
-				", partid=" + partid +
-				", sp_title='" + sp_title + '\'' +
-				", season_id='" + season_id + '\'' +
-				", season_index='" + season_index + '\'' +
-				", season_episode='" + season_episode + '\'' +
-				", bangumi_id=" + bangumi_id +
-				'}';
+		return "番剧:"+title+"已更新，传送门："+ ApiUrl.AV.getUrl(aid,partid);
 	}
 }

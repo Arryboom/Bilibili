@@ -1,4 +1,4 @@
-package main.java.org.pqh.entity;
+package org.pqh.entity.statistics;
 
 import java.sql.Timestamp;
 

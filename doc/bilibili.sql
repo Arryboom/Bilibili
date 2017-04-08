@@ -1,7 +1,7 @@
 /*
 Navicat MySQL Data Transfer
 
-Source Server         : test
+Source Server         : localhost_3306
 Source Server Version : 50714
 Source Host           : localhost:3306
 Source Database       : bilibili
@@ -10,7 +10,7 @@ Target Server Type    : MYSQL
 Target Server Version : 50714
 File Encoding         : 65001
 
-Date: 2016-08-08 16:11:51
+Date: 2016-12-14 17:54:37
 */
 
 SET FOREIGN_KEY_CHECKS=0;
@@ -55,11 +55,7 @@ CREATE TABLE `aid` (
   `season_id` int(11) DEFAULT NULL,
   `season_index` varchar(255) DEFAULT NULL,
   `season_episode` varchar(255) DEFAULT NULL,
-  `error` varchar(255) DEFAULT NULL,
-  `link` varchar(255) DEFAULT NULL,
   `bangumi_id` int(11) DEFAULT NULL,
-  `code` varchar(255) DEFAULT NULL,
-  `acpt` int(11) DEFAULT NULL,
   PRIMARY KEY (`aid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -244,7 +240,8 @@ CREATE TABLE `param` (
 DROP TABLE IF EXISTS `save`;
 CREATE TABLE `save` (
   `id` int(11) NOT NULL,
-  `bilibili` int(11) DEFAULT NULL
+  `bilibili` varchar(11) DEFAULT NULL,
+  `lastUpdateTime` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- ----------------------------
@@ -299,7 +296,14 @@ CREATE TABLE `vstorage` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- ----------------------------
--- View structure for 番剧
+-- view structure for 番剧
 -- ----------------------------
 DROP VIEW IF EXISTS `番剧`;
 CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `番剧` AS select `c`.`aid` AS `aid`,`c`.`cid` AS `cid`,`c`.`pid` AS `pid`,`c`.`typeid` AS `typeid`,`d`.`title` AS `title`,`d`.`subtitle` AS `subtitle` from (`cid` `c` join `data` `d` on(((`c`.`cid` = `d`.`cid`) and ((`c`.`typeid` = 32) or (`c`.`typeid` = 33))))) ;
+
+-- ----------------------------
+-- 数据初始化
+-- ----------------------------
+INSERT INTObilibili.save(id,bilibili)VALUES(1,'1:1');
+INSERT INTObilibili.save(id,bilibili)VALUES(2,'1');
+INSERT INTObilibili.save(id,bilibili)VALUES(3,'1');

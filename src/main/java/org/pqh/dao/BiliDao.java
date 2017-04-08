@@ -1,13 +1,17 @@
-package main.java.org.pqh.dao;
+package org.pqh.dao;
 
-import main.java.org.pqh.entity.*;
+import org.pqh.entity.*;
 import org.apache.ibatis.annotations.Param;
+import org.pqh.entity.statistics.AvCount;
+import org.pqh.entity.statistics.AvPlay;
+import org.pqh.entity.statistics.Ranking;
 import org.springframework.stereotype.Component;
 
+import java.io.Serializable;
 import java.util.List;
 
 @Component
-public interface BiliDao {
+public interface BiliDao extends Serializable{
 	Bili findByCid(int cid);
 	Bili findByAid(int aid);
 
@@ -38,13 +42,13 @@ public interface BiliDao {
 
 	List<Ranking> selectRanking();
 
-	void insertParam(main.java.org.pqh.entity.Param param);
+	void insertParam(org.pqh.entity.Param param);
 
-	main.java.org.pqh.entity.Param selectParam(String key);
+	org.pqh.entity.Param selectParam(String key);
 
-	List<main.java.org.pqh.entity.Param> selectParams();
+	List<org.pqh.entity.Param> selectParams();
 
-	void updateParam(main.java.org.pqh.entity.Param param);
+	void updateParam(org.pqh.entity.Param param);
 
 	void insertBangumi(Bangumi bangumi);
 
@@ -53,4 +57,6 @@ public interface BiliDao {
 	Bangumi selectBangumi_id(Integer bangumi_id);
 
 	int getLastAid(@Param("table") String table,@Param("field") String field);
+
+
 }

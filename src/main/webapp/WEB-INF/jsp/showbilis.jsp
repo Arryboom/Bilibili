@@ -20,8 +20,8 @@
 			<c:forEach var="list" items="${list}">
 				<tr>
 					<th>${list.title}</th>
-					<th><a href="http://www.bilibili.com/video/av${list.aid}">${list.aid}</a></th>
-					<th><a href="http://comment.bilibili.com/${list.cid}.xml">${list.cid}</a></th>
+					<th><code href="http://www.bilibili.com/video/av${list.aid}">${list.aid}</code></th>
+					<th><code href="http://comment.bilibili.com/${list.cid}.xml">${list.cid}</code></th>
 				</tr>
 			</c:forEach>
 		</tbody>

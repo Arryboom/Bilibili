@@ -1,41 +1,27 @@
-package main.java.org.pqh.task;
+package org.pqh.task;
 
-import main.java.org.pqh.service.InsertService;
-
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import static org.pqh.util.SpringContextHolder.insertService;
 
 /**
  * Created by 10295 on 2016/5/9.
  */
-
 public class TaskCid implements Runnable {
     private int cid;
-    private InsertService insertService;
-    private  Method method;
 
-    public TaskCid(InsertService insertService,int cid, String methodName) {
+    private int type;
+
+    public TaskCid(int cid,int type) {
         this.cid = cid;
-        this.insertService=insertService;
-        try {
-            method = insertService.getClass().getDeclaredMethod(methodName, Integer.class);
-
-        } catch (NoSuchMethodException e) {
-            e.printStackTrace();
-        }
-
+        this.type = type;
     }
 
 
     public void run() {
-        try {
-            method.invoke(insertService,cid);
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        } catch (InvocationTargetException e) {
-            e.printStackTrace();
-        }
+            if(type==0){
+                insertService.insertVstorage(cid);
+            }else if(type==1){
+                insertService.insertCid(cid);
+            }
     }
-
 
 }

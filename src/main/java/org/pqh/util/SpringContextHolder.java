@@ -1,9 +1,10 @@
-package main.java.org.pqh.util;
+package org.pqh.util;
 
-import main.java.org.pqh.dao.BiliDao;
-import main.java.org.pqh.dao.VstorageDao;
-import main.java.org.pqh.service.AvCountService;
-import main.java.org.pqh.service.InsertService;
+import org.pqh.dao.BduDao;
+import org.pqh.dao.BiliDao;
+import org.pqh.dao.VstorageDao;
+import org.pqh.service.AvCountService;
+import org.pqh.service.InsertService;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
@@ -22,6 +23,7 @@ public class SpringContextHolder{
     public static VstorageDao vstorageDao;
     public static AvCountService avCountService;
     public static AbstractApplicationContext applicationContext;
+    public static BduDao bduDao;
 
     static {
         applicationContext=new ClassPathXmlApplicationContext("classpath:applicationContext.xml");
@@ -30,6 +32,7 @@ public class SpringContextHolder{
         threadPoolTaskExecutor=SpringContextHolder.getBean("taskExecutor");
         vstorageDao=SpringContextHolder.getBean("vstorageDao");
         avCountService=SpringContextHolder.getBean("avCountService");
+        bduDao=SpringContextHolder.getBean("bduDao");
     }
 
     public static void close(){

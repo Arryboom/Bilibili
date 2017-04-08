@@ -1,17 +1,35 @@
-package main.java.org.pqh.util;
+package org.pqh.util;
 
 import org.apache.log4j.Logger;
-import main.java.org.pqh.entity.Bili;
+import org.pqh.entity.*;
+import org.pqh.entity.vstorage.*;
 
 import javax.swing.*;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 /**反射工具类
  * Created by 10295 on 2016/8/4.
  */
 public class ReflexUtil {
-    private static Logger log= TestSlf4j.getLogger(ReflexUtil.class);
+    private static Logger log= Logger.getLogger(ReflexUtil.class);
+
+    public static Map<String, Object> getMap() {
+        Map<String, Object> map = new HashMap<>();
+        map.put(Vstorage.class.getName(),new Vstorage());
+        map.put(Data.class.getName(),new Data());
+        map.put(Files.class.getName(),new ArrayList<Files>());
+        map.put(Dispatch_servers.class.getName(),new ArrayList<Dispatch_servers>());
+        map.put(Upload.class.getName(),new ArrayList<Upload>());
+        map.put(Node_server.class.getName(),new ArrayList<Node_server>());
+        map.put(Upload_meta.class.getName(),new Upload_meta());
+        return map;
+    }
+
+
     /**
      * 根据类名获取对象
      * @param classname
@@ -21,14 +39,15 @@ public class ReflexUtil {
         try {
             return Class.forName(classname).newInstance();
         } catch (InstantiationException e) {
-            TestSlf4j.outputLog(e,log);
+            LogUtil.outPutLog(LogUtil.getLineInfo(),e);
         } catch (IllegalAccessException e) {
-            TestSlf4j.outputLog(e,log);
+            LogUtil.outPutLog(LogUtil.getLineInfo(),e);
         } catch (ClassNotFoundException e) {
-            TestSlf4j.outputLog(e,log);
+            LogUtil.outPutLog(LogUtil.getLineInfo(),e);
         }
         return null;
     }
+
     /**
      * 检查对象字段是否全为空
      * @param object
@@ -48,7 +67,7 @@ public class ReflexUtil {
             }
             return true;
         } catch (IllegalAccessException e) {
-            TestSlf4j.outputLog(e,log);
+            LogUtil.outPutLog(LogUtil.getLineInfo(),e);
         }
         return false;
     }
@@ -72,12 +91,10 @@ public class ReflexUtil {
                     if(flag==0){
                         String excludenode=PropertiesUtil.getProperties("excludenode",String.class);
                         PropertiesUtil.updateProperties("excludenode",excludenode.equals("")?key:excludenode+","+key,null);
-                        return object;
                     }
-
                 }
-                TestSlf4j.outputLog(e1,log);
-
+                LogUtil.outPutLog(LogUtil.getLineInfo(),e);
+                return object;
             }
         }
         field.setAccessible(true);
@@ -93,9 +110,9 @@ public class ReflexUtil {
                 field.set(object, Boolean.parseBoolean(value));
             } else if (type== Date.class) {
                 if (value.contains(":")) {
-                    field.set(object,TimeUtil.formatStringToDate(value,Constant.DATETIME));
+                    field.set(object,TimeUtil.parseDate(value,TimeUtil.DATETIME));
                 } else {
-                    field.set(object, TimeUtil.formatStringToDate(value,null));
+                    field.set(object, TimeUtil.parseDate(value,null));
                 }
             } else {
                 field.set(object, value);
@@ -106,12 +123,12 @@ public class ReflexUtil {
                 try {
                     field.set(object,null);
                 } catch (IllegalAccessException e1) {
-                    TestSlf4j.outputLog(e,log);
+                    LogUtil.outPutLog(LogUtil.getLineInfo(),e);
                 }
             }
         }
         catch (IllegalAccessException e) {
-            TestSlf4j.outputLog(e,log);
+            LogUtil.outPutLog(LogUtil.getLineInfo(),e);
         }
         return object;
     }
