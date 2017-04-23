@@ -2,6 +2,7 @@ package org.pqh.dao;
 
 import org.pqh.entity.vstorage.*;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Map;
@@ -9,7 +10,7 @@ import java.util.Map;
 /**
  * Created by 10295 on 2016/5/22.
  */
-@Component
+@Repository
 public interface VstorageDao {
     void insertVstorage(Vstorage vstorage);
 

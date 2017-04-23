@@ -4,8 +4,14 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.http.HttpEntity;
+import org.apache.http.NameValuePair;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.mime.HttpMultipartMode;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.entity.mime.content.FileBody;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.log4j.Logger;
@@ -16,14 +22,18 @@ import org.jsoup.HttpStatusException;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by 10295 on 2016/8/4.
+ * 爬虫工具类
  */
 public class CrawlerUtil {
     private static Logger log= Logger.getLogger(CrawlerUtil.class);
@@ -54,15 +64,52 @@ public class CrawlerUtil {
             return doGet(href);
         }
     }
+
+    public static HttpEntity makeMultipartEntity(List<NameValuePair> params, final Map<String, File> files) {
+
+        MultipartEntityBuilder builder = MultipartEntityBuilder.create();
+
+        builder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE); //如果有SocketTimeoutException等情况，可修改这个枚举
+
+        //builder.setCharset(Charset.forName("UTF-8"));
+        //不要用这个，会导致服务端接收不到参数
+
+        if (params != null && params.size() > 0) {
+
+            for (NameValuePair p : params) {
+
+                builder.addTextBody(p.getName(), p.getValue(), ContentType.TEXT_PLAIN.withCharset("UTF-8"));
+
+            }
+
+        }
+
+        if (files != null && files.size() > 0) {
+
+            Set<Map.Entry<String, File>> entries = files.entrySet();
+
+            for (Map.Entry<String, File> entry : entries) {
+
+                builder.addPart(entry.getKey(), new FileBody(entry.getValue()));
+
+            }
+
+        }
+
+        return builder.build();
+
+    }
+
     /**
      *
      * @param url 爬虫的网址
-     * @param tClass 返回的类对象
+     * @param tClass 返回的对象类型
      * @param method 请求方式
-     * @param <T>
+     * @param <T> 返回的对象类型
+     * @param params 请求参数
      * @return  返回文档信息
      */
-    public static <T>T jsoupGet(String url, Class<T> tClass, Connection.Method method){
+    public static <T>T jsoupGet(String url, Class<T> tClass, Connection.Method method,String ...params){
         Connection connection=null;
         ObjectMapper objectMapper=new ObjectMapper();
         objectMapper.configure(JsonParser.Feature.ALLOW_UNQUOTED_CONTROL_CHARS,true);
@@ -75,7 +122,8 @@ public class CrawlerUtil {
                 SAXReader saxReader=new SAXReader();
                 return (T) saxReader.read(url);
             }
-            connection = Jsoup.connect(url).header("Cookie",cookie).userAgent(userAgent).data(formMap).timeout(timeout*1000).ignoreContentType(true);
+//            String param[]=url.contains("?")?url.substring(url.indexOf("?")+1).split("="):null;
+            connection = Jsoup.connect(url).header("Cookie",cookie).userAgent(userAgent).timeout(timeout*1000).data(params).ignoreContentType(true);
 
 
             if(tClass==Document.class){
@@ -90,12 +138,8 @@ public class CrawlerUtil {
             else if(tClass==String.class){
                 return (T) connection.execute().body();
             }else if(tClass==JsonNode.class){
-                json=StringUtil.convert(method.equals(Connection.Method.GET)?connection.get().select("body").text():connection.post().body().text());
-                if(json.endsWith("}")) {
-                    return (T) objectMapper.readTree(json);
-                }else{
-                    return null;
-                }
+                json=method.equals(Connection.Method.GET)?connection.get().body().text():connection.post().body().text();
+                return (T) objectMapper.readTree(json);
             }else {
                 throw new RuntimeException("返回值不支持"+tClass.getName()+"这种类型");
             }
@@ -107,16 +151,21 @@ public class CrawlerUtil {
                 if(url.contains("vstorage")){
                     return (T)objectMapper.readTree(stringUtil.jsonValueEscape("title","author","subtitle"));
                 }else{
-                    return (T)stringUtil.fuckJson();
+                    return (T)objectMapper.readTree(stringUtil.convert());
                 }
-
-            } catch (IOException e1) {
+            } catch (JsonParseException e1) {
+                if(!url.contains("vstorage")){
+                    return (T)stringUtil.fuckJson();
+                }else{
+                    return null;
+                }
+            }catch (IOException e1) {
                 log.error("异常信息"+e1.getMessage());
                 return null;
             }
         }
         catch (HttpStatusException e){
-            if(e.getStatusCode()==404&&url.contains(ApiUrl.CID.getUrl())){
+            if(e.getStatusCode()==404){
                 return null;
             }else{
                 return jsoupGet(url,tClass,method);
@@ -131,7 +180,7 @@ public class CrawlerUtil {
             ThreadUtil.sleep(5);
             return jsoupGet(url,tClass,method);
         } catch (DocumentException e) {
-            log.error(e.getMessage());
+            log.error("解析xml文档出错，异常信息"+e.getMessage());
             if(e.getMessage().contains("在文档的元素内容中找到无效的 XML 字符")||e.getMessage().contains("前言中不允许有内容")||e.getMessage().contains("HTTP response code: 502")) {
                 return null;
             }

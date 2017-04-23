@@ -9,6 +9,14 @@ public class AvCount {
     private Date date;
     private Integer count;
 
+    public AvCount() {
+    }
+
+    public AvCount(Date date, Integer count) {
+        this.date = date;
+        this.count = count;
+    }
+
     public Date getDate() {
         return date;
     }

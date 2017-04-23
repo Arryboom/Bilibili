@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.FileFilterUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
@@ -12,13 +13,11 @@ import org.dom4j.io.SAXReader;
 import org.jsoup.Connection;
 import org.pqh.entity.Bangumi;
 import org.pqh.entity.Bili;
-import org.pqh.test.Test;
+import org.springframework.dao.DuplicateKeyException;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static org.pqh.util.SpringContextHolder.biliDao;
 public class BiliUtil {
@@ -26,7 +25,7 @@ public class BiliUtil {
 	private static Logger log=Logger.getLogger(BiliUtil.class);
 	private static org.dom4j.Document xml= null;
 	private static JsonNode jsonNode;
-	private static String access_token;
+	public static String access_token;
 	private static String appkey;
 	private static String app_secret;
 	static {
@@ -37,32 +36,26 @@ public class BiliUtil {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		access_token=biliDao.selectParam("access_token").getValue();
-		appkey=biliDao.selectParam("appkey").getValue();
-		app_secret=biliDao.selectParam("app_secret").getValue();
+		access_token=biliDao.selectParam("access_token").get(0).getValue();
+		appkey=biliDao.selectParam("appkey").get(0).getValue();
+		app_secret=biliDao.selectParam("app_secret").get(0).getValue();
 	}
 
 	/**
 	 * 把xml节点值通过反射注入到不同对象
 	 * @param elements  xml文档节点列表
-	 * @param list 反射的类对象
-	 * @param index 反射类索引
 	 * @return
 	 */
-	public static List setElement(List<Element> elements,List list,int index){
-		Test test=new Test();
+	public static Bili setElement(List<Element> elements){
+		Bili bili=new Bili();
 		for(org.dom4j.Element element:elements){
 			//不需要入库的节点数据
 			if(PropertiesUtil.getProperties("excludenode",String.class).contains(element.getName())){
 				continue;
 			}
-			if(element.elements().size()>0){
-				setElement(element.elements(),list,1);
-			}else{
-				ReflexUtil.setObject(list.get(index),element.getName(),element.getText());
-			}
+			bili=  ReflexUtil.setObject(bili,element.getName(),element.getText());
 		}
-		return list;
+		return bili;
 	}
 
 	/**
@@ -71,7 +64,7 @@ public class BiliUtil {
 	 * @param page 视频分P
 	 * @return 返回接口数据注入的对象集合
 	 */
-	public static List setView(int aid, int page){
+	public static Bili setView(int aid, int page){
 		Queue<String> strings=new LinkedList<String>();
 		strings.offer(access_token);
 		strings.offer(appkey);
@@ -79,14 +72,11 @@ public class BiliUtil {
 		strings.offer(page+"");
 		Map<String,String> map=parseXml(strings,ApiUrl.AID.getUrl());
 		org.dom4j.Document document=null;
-		String url= ApiUrl.AID.getUrl(map.get("params"));
-		document = CrawlerUtil.jsoupGet(url, org.dom4j.Document.class, Connection.Method.GET);
+		document = CrawlerUtil.jsoupGet(ApiUrl.AID.getUrl(), org.dom4j.Document.class, Connection.Method.GET,map.get("params_").split(","));
 		if(document==null){
 			return null;
 		}
-		List list=new ArrayList();
-		list.add(new Bili());
-		list.add(new Bangumi());
+
 		Element element=document.getRootElement();
 		Element code=element.element("code");
 		if(code!=null) {
@@ -96,27 +86,18 @@ public class BiliUtil {
 				ThreadUtil.sleep(LogUtil.getLineInfo()+"\n"+code.getText(),3);
 				return setView(aid, page);
 			}else if(code.getText().equals("-2")){
-				log.info("access_key已过期，发送access_key续期请求");
-				JsonNode jsonNode=CrawlerUtil.jsoupGet(ApiUrl.accessKey.getUrl(access_token), JsonNode.class,Connection.Method.GET);
-				log.info(jsonNode);
-				if(jsonNode.get("code").equals("0")){
-					long expires = jsonNode.get("expires").asLong();
-					log.info("access_key续期到" + TimeUtil.formatDate(new Date(expires), null));
-				}else{
-					log.info(jsonNode.get("message").asText());
-					String updateKey = "";
-					do {
-						ThreadUtil.sleep("access_key续期失败，请手动到数据库更新access_key", 30);
-						updateKey = biliDao.selectParam("access_token").getValue();
-					} while (updateKey.equals(access_token));
-					access_token = updateKey;
-				}
-				return setView(aid, page);
+				String updateKey = "";
+				do {
+					ThreadUtil.sleep("access_key续期失败，请手动到数据库更新access_key", 30);
+					updateKey = biliDao.selectParam("access_token").get(0).getValue();
+				} while (updateKey.equals(access_token));
+				access_token = updateKey;
 			}
+			ThreadUtil.sleep(LogUtil.getLineInfo()+"\n"+code.getText(),3);
+			return setView(aid, page);
 
 		}
-		list=setElement(element.elements(),list,0);
-		return list;
+		return setElement(element.elements());
 	}
 
 
@@ -163,46 +144,62 @@ public class BiliUtil {
 		}
 	}
 
+	public static void insertBangumi() {
+		for (int season_id = 1; season_id < 7000; season_id++) {
+			log.info("season_id:" + season_id);
+			JsonNode node = CrawlerUtil.jsoupGet(ApiUrl.bangumiAnime.getUrl(season_id), JsonNode.class, Connection.Method.GET);
+			if (node.get("code").asInt() == 10) {
+				continue;
+			}
+			String title = node.get("result").get("title").asText();
+			int bangumi_id = node.get("result").get("bangumi_id").asInt();
+			Bangumi bangumi = new Bangumi(season_id, bangumi_id, title);
+			try {
+				biliDao.insertBangumi(bangumi);
+			} catch (DuplicateKeyException e) {
+				biliDao.updateBangumi(bangumi);
+			}
+		}
+	}
+
 	/**
-	 * 正则表达式匹配
-	 * @param str 匹配字符串
-	 * @param regex 正则表达式
-	 * @param c 返回类型
+	 *
+	 *获取爬虫进度
+	 * @param id
 	 * @param <T>
 	 * @return
 	 */
-	public static <T>T matchStr(String str,String regex,Class<T> c){
-		Pattern pattern = Pattern.compile(regex);
-		Matcher matcher = pattern.matcher(str);
-		String s=null;
-		List<String> list=null;
-		while (matcher.find()) {
-			s=matcher.group();
-			log.info("匹配结果"+s);
-			if(c==String.class) {
-				return (T)s;
-			}else if(c==List.class){
-				if(list==null){
-					list=new ArrayList<>();
-				}
-				list.add(s);
-			}
-		}
-		if(s==null){
-			return null;
-		}else if(c==String.class){
-			return (T) s;
-		}else if(c==List.class){
-			return (T) list;
+	public static <T>T getSave(int id){
+		String bilibili=biliDao.selectSave(id).get(0).getBilibili();
+		if(bilibili.contains(":")) {
+			String str[] = bilibili.split(":");
+			int num[] = new int[2];
+			num[0] = Integer.valueOf(str[0]);
+			num[1] = Integer.valueOf(str[1]);
+			return (T) num;
 		}else{
-			return null;
+			return (T) Integer.valueOf(bilibili);
 		}
+	}
 
+	/**
+	 * 自动续期access_key
+	 */
+	public static void updateAccesskey(){
+		log.info("自动续期access_key");
+		JsonNode jsonNode=CrawlerUtil.jsoupGet(ApiUrl.accessKey.getUrl(BiliUtil.access_token), JsonNode.class,Connection.Method.GET);
+		log.info(jsonNode);
 	}
 
 
+	/**
+	 * 构建表单参数。
+	 * @param strings
+	 * @param url
+	 * @return
+	 */
 	public static Map<String,String> parseXml(Queue<String> strings,String url){
-		Map<String,String> map=new HashMap<String, String>();
+		Map<String,String> map=new HashMap<>();
 
 		try {
 			if(xml==null) {
@@ -210,13 +207,15 @@ public class BiliUtil {
 				xml = new SAXReader().read(xmlPath);
 			}
 		} catch (DocumentException e) {
+			log.error(e);
 			e.printStackTrace();
 		}
 		List<org.dom4j.Element> forms=xml.getRootElement().elements();
 		for(org.dom4j.Element form:forms){
 			if(form.attribute("url").getStringValue().equals(url)){
 				List<Element> params=form.elements();
-				String params_="";
+				List<String> type1=new ArrayList<>();
+				List<String> type2=new ArrayList<>();
 				for(org.dom4j.Element param:params){
 					String value="";
 					if(!param.getStringValue().isEmpty()){
@@ -226,14 +225,19 @@ public class BiliUtil {
 					}else{
 						throw new RuntimeException("栈为空无法注入预定义参数");
 					}
-					params_+=param.getName()+"="+value+"&";
-					map.put(param.getName(),value);
+					type1.add(param.getName()+"="+value);
+					type2.add(param.getName());
+					type2.add(value);
+					map.put(param.getName(), value);
 				}
-				params_=params_.substring(0,params_.length()-1);
-				String sign=AlgorithmUtil.MD5(params_+app_secret).toLowerCase();
-				params_+="&sign="+sign;
-				map.put("sign",sign);
-				map.put("params",params_);
+
+				String p=StringUtils.join(type1,"&");
+				String sign=AlgorithmUtil.MD5(p+app_secret).toLowerCase();
+				type1.add("sign="+sign);
+				p=StringUtils.join(type1,"&");
+				map.put("sign", sign);
+				map.put("params_", StringUtils.join(type2,","));
+				map.put("params", p);
 				return map;
 			}
 		}

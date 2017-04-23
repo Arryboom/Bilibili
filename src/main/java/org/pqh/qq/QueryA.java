@@ -7,7 +7,6 @@ import org.apache.log4j.Logger;
 import org.pqh.dao.BiliDao;
 import org.pqh.entity.Bili;
 import org.pqh.entity.Param;
-import org.pqh.util.LogUtil;
 import org.pqh.util.TimeUtil;
 import org.springframework.stereotype.Component;
 
@@ -54,10 +53,10 @@ public class QueryA implements QueryRule{
                 }
             } catch (NoSuchFieldException e) {
 //                e.printStackTrace();
-                LogUtil.outPutLog(LogUtil.getLineInfo(),e);
+                log.error(e);
             } catch (IllegalAccessException e) {
 //                e.printStackTrace();
-                LogUtil.outPutLog(LogUtil.getLineInfo(),e);
+                log.error(e);
             }
         }
 
@@ -68,7 +67,7 @@ public class QueryA implements QueryRule{
     public boolean setQuery(){
         fields=new HashMap<>();
         try{
-            Param param=biliDao.selectParam("query1");
+            Param param=biliDao.selectParam("query1").get(0);
             if(param.getValue().equals("*")){
                 return false;
             }
@@ -78,7 +77,7 @@ public class QueryA implements QueryRule{
             }
             return true;
         }catch (Exception e){
-            LogUtil.outPutLog(LogUtil.getLineInfo(),e);
+            log.error(e);
             return false;
         }
     }

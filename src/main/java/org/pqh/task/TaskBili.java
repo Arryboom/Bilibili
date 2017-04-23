@@ -33,7 +33,9 @@ public class TaskBili extends Observable implements Runnable{
         this.$aid = $aid;
     }
 
-
+    public TaskBili(int id) {
+        this.id = id;
+    }
 
     // 此方法一经调用，立马可以通知观察者，在本例中是监听线程
     public void doBusiness(Object obj){
@@ -47,10 +49,16 @@ public class TaskBili extends Observable implements Runnable{
     }
 
     public void run() {
+
         try {
-            insertService.insertBili(id,aid, page, $aid);
-        } catch (InterruptedException e) {
+            if(id==4) {
+                insertService.insertHistory();
+            }else {
+                insertService.insertBili(id, aid, page, $aid);
+            }
+        }finally {
             doBusiness(null);
         }
     }
+
 }

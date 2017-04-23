@@ -62,7 +62,7 @@ public class TsdmUtil {
             document = CrawlerUtil.jsoupGet(href,Document.class,Connection.Method.GET);
             for(Element element:document.select("a[href^="+ApiUrl.yunPan.getUrl()+"]")){
                 href=element.attr("href");
-                String pwd=BiliUtil.matchStr(document.html(),"密码:\\s*\\w+",String.class).replaceAll("\\W+","");
+                String pwd=StringUtil.matchStr(document.html(),"密码:\\s*\\w+",String.class).replaceAll("\\W+","");
                 yunHref.put(href,pwd);
             }
         }
@@ -70,9 +70,7 @@ public class TsdmUtil {
     }
 
     public static String switchZN (String chinese,String font){
-        CrawlerUtil.formMap.put("code",chinese);
-        CrawlerUtil.formMap.put("operate",font);
-        JsonNode jsonNode=CrawlerUtil.jsoupGet(ApiUrl.zhConvert.getUrl(),JsonNode.class,Connection.Method.POST);
+        JsonNode jsonNode=CrawlerUtil.jsoupGet(ApiUrl.zhConvert.getUrl(),JsonNode.class,Connection.Method.POST,"code",chinese,"operate",font);
         return jsonNode.get("text").asText();
     }
 }

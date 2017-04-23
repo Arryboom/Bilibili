@@ -1,14 +1,18 @@
 package org.pqh.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.jsoup.Connection;
 import org.jsoup.nodes.Document;
 import org.pqh.dao.BiliDao;
-import org.pqh.entity.*;
-import org.pqh.entity.vstorage.Vstorage;
+import org.pqh.dao.BiliHistoryDao;
+import org.pqh.entity.Bili;
+import org.pqh.entity.Cid;
+import org.pqh.entity.Save;
+import org.pqh.entity.history.Data;
+import org.pqh.entity.statistics.AvCount;
 import org.pqh.task.TaskQuery;
-import org.pqh.test.Test;
 import org.pqh.util.*;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
@@ -17,71 +21,63 @@ import javax.annotation.Resource;
 import java.lang.reflect.Field;
 import java.sql.Timestamp;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
+
 @Service
 public class InsertService{
 	private static Logger log= Logger.getLogger(InsertService.class);
 	@Resource
 	private BiliDao biliDao;
 	@Resource
-	private TaskQuery taskQuery;
+	private BiliHistoryDao biliHistoryDao;
 	@Resource
-	private Test test;
+	private TaskQuery taskQuery;
+
+	public static boolean stop=false;
 
 	public InsertService() {
 
 	}
 
-	public void insertBili(int id, int aid, int page, int $aid)throws InterruptedException {
-		Bili bili=null;
-		Bangumi bangumi=null;
+	public void insertBili(int id, int aid, int page, int $aid) {
+		Bili bili;
 
 		if(aid==0&&page==0){
-			int num[]= Test.getSave(0,id);
+			int num[]= BiliUtil.getSave(id);
 			aid=num[0];
 			page=num[1];
 		}
 
 		while(($aid==0?true:aid<=$aid)){
 			do{
-				List list= BiliUtil.setView(aid,page);
-				if(list==null){
+				bili= BiliUtil.setView(aid,page);
+				if (bili==null){
 					break;
 				}
-				bili= (Bili) list.get(0);
-				bangumi= (Bangumi) list.get(1);
 				bili.setAid(aid);
 
 				bili.setTypename2(BiliUtil.getBq(bili.getTypename()));
 				bili.setPartid(page);
 
 				taskQuery.setBili(bili);
-				Test.excute(taskQuery);
+				ThreadUtil.excute(taskQuery);
 
 				try{
 					if(page==1){
-
-						if(bangumi.getBangumi_id()!=null){
-							bili.setBangumi_id(bangumi.getBangumi_id());
-							biliDao.insertBangumi(bangumi);
-						}
 						biliDao.insertBili(bili);
 					}
 					biliDao.insertCid(bili);
-					biliDao.setAid(new Save(id,aid+":"+page,new Timestamp(System.currentTimeMillis()),false));
-					log.debug("最新AV:"+ApiUrl.AV.getUrl(aid,page)+"更新于"+ TimeUtil.formatDate(new Date(bili.getCreated()*1000),null));
+					biliDao.updateSave(new Save(id,aid+":"+page,new Timestamp(System.currentTimeMillis()),false));
+					log.debug("最新AV:"+ApiUrl.AV.getUrl(new Object[]{aid,page})+"更新于"+ TimeUtil.formatDate(new Date(bili.getCreated()*1000),null));
 				}
 				catch(DuplicateKeyException e){
 					if(e.getMessage().contains("insertBili")){
 						biliDao.updateBili(bili);
-					}else if(e.getMessage().contains("insertBangumi")){
-						biliDao.updateBangumi(bangumi);
-					}
-					else{
+					}else{
 						biliDao.updateCid(bili);
 					}
-					biliDao.setAid(new Save(id,aid+":"+page,new Timestamp(System.currentTimeMillis()),false));
+					biliDao.updateSave(new Save(id,aid+":"+page,new Timestamp(System.currentTimeMillis()),false));
 				}
 				page++;
 			}while(page<=bili.getPages());
@@ -90,7 +86,9 @@ public class InsertService{
 
 			if(aid-lastAid> PropertiesUtil.getProperties("errornum",Integer.class)){
 				if(id==1){
-					biliDao.setLatest(id,true);
+					Save save=biliDao.selectSave(id).get(0);
+					save.setLatest(true);
+					biliDao.updateSave(save);
 				}
 				ThreadUtil.sleep(60);
 				aid=lastAid;
@@ -103,19 +101,75 @@ public class InsertService{
 
 	}
 
-	public void insertVstorage(Integer cid){
-		String url = ApiUrl.vstorage.getUrl(cid);
-		JsonNode jsonNode=CrawlerUtil.jsoupGet(url,JsonNode.class,Connection.Method.GET);
+	public void insertHistory() {
+		Save save=biliDao.selectSave(4).get(0);
+		for (int aid = Integer.parseInt(save.getBilibili());!stop ;) {
+			int count=aid;
+			do {
+				JsonNode n=CrawlerUtil.jsoupGet(ApiUrl.biliHistory.s(2).getUrl("add"), JsonNode.class, Connection.Method.POST, "access_key", BiliUtil.access_token, "aid", String.valueOf(aid), "jsonp", "jsonp");
+				if(n.get("code").asInt()==-500){
+					try {
+						Thread.sleep(60);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+				aid++;
+			}while (aid-count<=100);
+			JsonNode jsonNode = CrawlerUtil.jsoupGet(ApiUrl.biliHistory.s(1).getUrl(BiliUtil.access_token, 1, 100), JsonNode.class, Connection.Method.GET);
+			if(jsonNode.get("data")==null||jsonNode.get("data").size()==0){
+				if(jsonNode.get("code").asInt()==-500){
+					ThreadUtil.sleep(60);
+				}
+				continue;
+			}else{
 
-		if(jsonNode==null||jsonNode.get("list")!=null){
-			biliDao.setLatest(3,true);
-			return;
+				for(JsonNode node:jsonNode.get("data")) {
+					Data data = new Data();
+					Iterator<String> iterator = node.fieldNames();
+
+					while (iterator.hasNext()) {
+						Object obj  ;
+						String key = iterator.next();
+						if ("type,device,progress".contains(key)) {
+							continue;
+						}
+						JsonNode keys = node.get(key);
+						if (keys.isInt()) {
+							obj = keys.asInt();
+						} else if (keys.isBoolean()) {
+							obj = keys.asBoolean();
+						} else if (keys.isTextual()) {
+							obj = keys.asText();
+						} else if (keys.isArray()) {
+							obj = StringUtils.join(keys);
+						} else {
+							obj = keys.toString();
+						}
+						data = ReflexUtil.setObject(data, key, obj);
+					}
+					String date=TimeUtil.formatDate(new Timestamp(data.getCtime()*1000),TimeUtil.DATE);
+					try {
+
+						List<AvCount> avCounts= biliDao.selectAvCount(date,null);
+						if(avCounts.size()==0){
+							biliDao.insertAvCount(date);
+						}else {
+							biliDao.updateAvCount(date);
+						}
+						biliHistoryDao.insertHistory(data);
+					}catch (DuplicateKeyException e){
+						biliHistoryDao.updateHistory(data);
+					}
+
+				}
+
+			}
+			CrawlerUtil.jsoupGet(ApiUrl.biliHistory.s(2).getUrl("clear"), JsonNode.class, Connection.Method.POST, "access_key", BiliUtil.access_token, "jsonp", "jsonp");
+			save.setBilibili((aid)+"");
+			save.setLastUpdateTime(new Timestamp(System.currentTimeMillis()));
+			biliDao.updateSave(save);
 		}
-
-		Map<String,Object> map = test.getMap(jsonNode,ReflexUtil.getMap(), Vstorage.class.getName(), false, 0, cid);
-		test.setData(map);
-		biliDao.setAid(new Save(3,cid+"",new Timestamp(System.currentTimeMillis()),false));
-
 	}
 
 	public  void insertCid(Integer cid){
@@ -124,7 +178,8 @@ public class InsertService{
 		Field fields[]=c.getClass().getDeclaredFields();
 		Document document = CrawlerUtil.jsoupGet(url, Document.class, Connection.Method.GET);
 		if(document==null){
-			biliDao.setLatest(2,true);
+			Save save=biliDao.selectSave(2).get(0);
+			biliDao.updateSave(save);
 			return;
 		}
 		for(Field field:fields ){
@@ -134,7 +189,7 @@ public class InsertService{
 			if(key.equals("aid")&&value.isEmpty()){
 				return;
 			}
-			c= (Cid) ReflexUtil.setObject(c,key,value);
+			c= ReflexUtil.setObject(c,key,value);
 		}
 		c.setCid(cid);
 		try {
@@ -142,7 +197,7 @@ public class InsertService{
 		}catch (DuplicateKeyException e){
 			biliDao.updateC(c);
 		}
-		biliDao.setAid(new Save(2,cid+"",new Timestamp(System.currentTimeMillis()),false));
+		biliDao.updateSave(new Save(2,cid+"",new Timestamp(System.currentTimeMillis()),false));
 
 	}
 

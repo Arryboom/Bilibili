@@ -1,35 +1,21 @@
-<?xml version="1.0" encoding="UTF-8" ?>  
-<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN"      
- "http://ibatis.apache.org/dtd/mybatis-3-mapper.dtd">
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN"
+		"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="org.pqh.dao.BiliDao">
 	<cache type="org.pqh.redis.RedisCache"/>
 
-	<select id="findByCid" parameterType="int" resultType="org.pqh.entity.Bili">
-		select * from AID where CID=#{cid}
+	
+	<select id="selectSave" parameterType="int" resultType="org.pqh.entity.Save">
+		select * from save
+		<where>
+			<if test="_parameter!=null">
+				AND id=#{id}
+			</if>
+		</where>
 	</select>
 
-	<select id="findCids" resultType="org.pqh.entity.Bili">
-		select * from AID where CID BETWEEN #{startcid} AND #{overcid} ORDER BY CID
-	</select>
-	
-	<select id="findByAid" parameterType="int" resultType="org.pqh.entity.Bili">
-		select * from AID where AID=#{aid}
-	</select>
-	
-	<select id="findAids" parameterType="int" resultType="org.pqh.entity.Bili">
-		SELECT * FROM aid WHERE aid>#{aid} ORDER BY aid ASC LIMIT 20
-	</select>
-	
-	<select id="getAid" resultType="org.pqh.entity.Save">
-		select * from save where id=#{id}
-	</select>
-
-	<update id="setAid" parameterType="org.pqh.entity.Save">
+	<update id="updateSave" parameterType="org.pqh.entity.Save">
 		update save set bilibili=#{bilibili},lastUpdateTime=#{lastUpdateTime},latest=#{latest} where id=#{id}
-	</update>
-
-	<update id="setLatest" parameterType="boolean">
-		update save set latest=${latest} where id=#{id}
 	</update>
 
 	<insert id="insertBili" parameterType="org.pqh.entity.Bili">
@@ -48,15 +34,6 @@
 		UPDATE AIDCID set cid=#{cid},partname=#{partname} WHERE aid=#{aid} AND partid=#{partid}
 	</update>
 
-
-	<select id="count" parameterType="int" resultType="int">
-		SELECT count(*) from (SELECT * FROM aid WHERE aid>#{aid} ORDER BY aid ASC LIMIT 20) c
-	</select>
-	
-	<select id="findVCC" resultType="org.pqh.entity.Bili">
-		SELECT code.aid,code.title,data.partid,data.partname,data.cid from aid code,aidcid data where code.aid=data.aid AND code.aid BETWEEN #{startaid} AND #{overaid} ORDER BY aid,partid
-	</select>
-
 	<insert id="insertC" parameterType="org.pqh.entity.Cid">
 		INSERT INTO cid VALUES (#{cid},#{maxlimit},#{chatid},#{server},#{vtype},#{oriurl},#{aid},#{typeid},#{pid},#{click},#{favourites},#{credits},#{coins},#{fw_click},#{duration},#{arctype},#{danmu},#{bottom},#{sinapi},#{acceptguest},#{acceptaccel})
 	</insert>
@@ -67,7 +44,23 @@
 
 	<select id="selectAvCount" resultType="org.pqh.entity.statistics.AvCount">
 		SELECT * FROM avcount
+		<where>
+			<if test="date!=null">
+				AND date=#{date}
+			</if>
+			<if test="count!=null">
+				AND count>=#{count}
+			</if>
+		</where>
 	</select>
+
+	<insert id="insertAvCount">
+		INSERT INTO avcount VALUES (#{date},1);
+	</insert>
+
+	<update id="updateAvCount">
+		UPDATE avcount SET COUNT = COUNT +1 WHERE DATE =#{date};
+	</update>
 
 	<insert id="insertAvPlay" parameterType="java.util.List">
 		INSERT INTO avplay VALUES<foreach collection="list" item="item" index="index" separator=",">(#{item.title},#{item.play},#{item.timestamp},#{item.ranking})</foreach>
@@ -81,36 +74,50 @@
 		SELECT timestamp AS `key`,GROUP_CONCAT(title ORDER BY ranking) AS value FROM avplay GROUP BY timestamp ORDER BY timestamp
 	</select>
 
-	<insert id="insertParam">
+	<insert id="insertParam" parameterType="org.pqh.entity.Param">
 		insert into param values(#{key},#{value},#{desc})
 	</insert>
 
-	<update id="updateParam" parameterType="String">
+	<update id="updateParam" parameterType="org.pqh.entity.Param">
 		update param set value=#{value},`desc`=#{desc} where `key`=#{key}
 	</update>
 
 	<select id="selectParam" parameterType="String" resultType="org.pqh.entity.Param">
-		select * from param where `key`=#{key}
-	</select>
-
-	<select id="selectParams" resultType="org.pqh.entity.Param">
 		select * from param
+		<where>
+			<if test="_parameter!=null">
+				AND `key`=#{key}
+			</if>
+		</where>
 	</select>
 
 	<insert id="insertBangumi" parameterType="org.pqh.entity.Bangumi">
-		insert into bangumi values(#{bangumi_id},#{season_id},#{title},#{allow_download})
+		insert into bangumi values(#{seasonId},#{bangumiId},#{title})
 	</insert>
 
-	<select id="selectBangumi_id" parameterType="String" resultType="org.pqh.entity.Bili">
-		SELECT aid,cid,partid,partname,code.bangumi_id,data.title FROM aid code JOIN bangumi data ON code.bangumi_id=data.bangumi_id AND code.bangumi_id in (${bangumi_id})
-	</select>
-
 	<update id="updateBangumi" parameterType="org.pqh.entity.Bangumi">
-		update bangumi set season_id=#{season_id},title=#{title},allow_download=#{allow_download} where bangumi_id=#{bangumi_id}
+		update bangumi set bangumi_id=#{bangumiId},title=#{title} where season_id=#{seasonId}
 	</update>
+
+	<select id="selectBangumi" resultType="org.pqh.entity.Bangumi">
+		SELECT * FROM bangumi
+		<where>
+			<if test="seasonId!=null">
+				AND season_id=#{seasonId}
+			</if>
+			<if test="bangumiId!=null">
+				AND bangumi_id=#{bangumiId}
+			</if>
+			<if test="title!=null">
+				AND title LIKE '%${title}%'
+			</if>
+		</where>
+	</select>
 
 	<select id="getLastAid" resultType="int">
 		SELECT ${field} from ${table} ORDER BY ${field} DESC LIMIT 0,1;
 	</select>
+
+
 
 </mapper>

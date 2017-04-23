@@ -33,7 +33,7 @@
         <ts></ts>
     </form>
     <!--view接口2-->
-    <form url="http://api.bilibili.com/view?">
+    <form url="http://api.bilibili.com/view">
         <access_key></access_key>
         <appkey></appkey>
         <id></id>

@@ -1,6 +1,11 @@
 package org.pqh.util;
 
 import org.apache.log4j.Logger;
+import org.pqh.task.TaskCid;
+
+import static org.pqh.util.SpringContextHolder.biliDao;
+import static org.pqh.util.SpringContextHolder.threadPoolTaskExecutor;
+
 /**
  * Created by 10295 on 2016/8/4.
  */
@@ -21,10 +26,30 @@ public class ThreadUtil {
             }
 
         } catch (InterruptedException e) {
-            LogUtil.outPutLog(LogUtil.getLineInfo(),e);
+            log.error(e);
         }
     }
 
+    public static void addTask(int id,int type) {
+        for (int cid = BiliUtil.getSave(id);; cid++) {
+            if(biliDao.selectSave(id).get(0).isLatest()){
+                ThreadUtil.sleep(15);
+                cid=BiliUtil.getSave(id);
+            }
+            TaskCid taskCid=new TaskCid(cid);
+            excute(new Thread(taskCid,("insertCid:"+cid)));
+        }
+    }
+
+
+    /**
+     * 多线程执行任务简单封装
+     * @param runnable
+     */
+    public static void excute(Runnable runnable){
+        threadPoolTaskExecutor.execute(runnable);
+        ThreadUtil.sleep(100l);
+    }
 
     /**
      * 等待指定时长
@@ -49,7 +74,7 @@ public class ThreadUtil {
             }
 
         } catch (InterruptedException e) {
-            LogUtil.outPutLog(LogUtil.getLineInfo(),e);
+            log.error(e);
         }
     }
 

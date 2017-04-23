@@ -39,11 +39,11 @@ public class ReflexUtil {
         try {
             return Class.forName(classname).newInstance();
         } catch (InstantiationException e) {
-            LogUtil.outPutLog(LogUtil.getLineInfo(),e);
+            log.error(e);
         } catch (IllegalAccessException e) {
-            LogUtil.outPutLog(LogUtil.getLineInfo(),e);
+            log.error(e);
         } catch (ClassNotFoundException e) {
-            LogUtil.outPutLog(LogUtil.getLineInfo(),e);
+            log.error(e);
         }
         return null;
     }
@@ -67,7 +67,7 @@ public class ReflexUtil {
             }
             return true;
         } catch (IllegalAccessException e) {
-            LogUtil.outPutLog(LogUtil.getLineInfo(),e);
+            log.error(e);
         }
         return false;
     }
@@ -78,7 +78,7 @@ public class ReflexUtil {
      * @param value
      * @return
      */
-    public static Object setObject(Object object,String key,String value) {
+    public static <T>T setObject(Object object,String key,Object value) {
         Field field=null;
         try {
             field = object.getClass().getDeclaredField(key);
@@ -93,26 +93,27 @@ public class ReflexUtil {
                         PropertiesUtil.updateProperties("excludenode",excludenode.equals("")?key:excludenode+","+key,null);
                     }
                 }
-                LogUtil.outPutLog(LogUtil.getLineInfo(),e);
-                return object;
+                log.error(e+"\n"+object.getClass()+" "+key+" "+value);
+                return (T)object;
             }
         }
         field.setAccessible(true);
         Class type = field.getType();
         try {
+            String v=value.toString();
             if (type==Integer.class) {
-                field.set(object, Integer.parseInt(value));
+                field.set(object, Integer.parseInt(v));
             } else if (type==Long.class) {
-                field.set(object, Long.parseLong(value));
+                field.set(object, Long.parseLong(v));
             } else if (type== Float.class) {
-                field.set(object, Float.parseFloat(value));
+                field.set(object, Float.parseFloat(v));
             } else if (type==Boolean.class) {
-                field.set(object, Boolean.parseBoolean(value));
+                field.set(object, Boolean.parseBoolean(v));
             } else if (type== Date.class) {
-                if (value.contains(":")) {
-                    field.set(object,TimeUtil.parseDate(value,TimeUtil.DATETIME));
+                if (v.contains(":")) {
+                    field.set(object,TimeUtil.parseDate(v,TimeUtil.DATETIME));
                 } else {
-                    field.set(object, TimeUtil.parseDate(value,null));
+                    field.set(object, TimeUtil.parseDate(v,null));
                 }
             } else {
                 field.set(object, value);
@@ -123,13 +124,13 @@ public class ReflexUtil {
                 try {
                     field.set(object,null);
                 } catch (IllegalAccessException e1) {
-                    LogUtil.outPutLog(LogUtil.getLineInfo(),e);
+                    log.error(e);
                 }
             }
         }
         catch (IllegalAccessException e) {
-            LogUtil.outPutLog(LogUtil.getLineInfo(),e);
+            log.error(e);
         }
-        return object;
+        return (T)object;
     }
 }

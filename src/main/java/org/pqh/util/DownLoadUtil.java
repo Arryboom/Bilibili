@@ -76,7 +76,7 @@ public class DownLoadUtil {
                 }
                 EntityUtils.consume(httpEntity);
             } catch (IOException e) {
-                LogUtil.outPutLog(LogUtil.getLineInfo(),e);
+                log.error(e);
             }
         }
 
@@ -109,14 +109,14 @@ public class DownLoadUtil {
                 }
             }
         } catch (IOException e) {
-            LogUtil.outPutLog(LogUtil.getLineInfo(),e);
+            log.error(e);
         } catch (DocumentException e) {
-            LogUtil.outPutLog(LogUtil.getLineInfo(),e);
+            log.error(e);
         }finally {
 //            try {
 //                EntityUtils.consume(httpEntity);
 //            } catch (IOException e) {
-//                LogUtil.outPutLog(LogUtil.getLineInfo(),e);
+//                log.error(e);
 //            }
 
         }
@@ -330,8 +330,8 @@ public class DownLoadUtil {
             strings.offer(iid);
             strings.offer(begin+"");
             begin++;
-            CrawlerUtil.formMap = BiliUtil.parseXml(strings,ApiUrl.youkuDanMu.getUrl());
-            JsonNode jsonNode = CrawlerUtil.jsoupGet(ApiUrl.youkuDanMu.getUrl(), JsonNode.class, Connection.Method.POST);
+            String params[]= BiliUtil.parseXml(strings,ApiUrl.youkuDanMu.getUrl()).get("params_").split(",");
+            JsonNode jsonNode = CrawlerUtil.jsoupGet(ApiUrl.youkuDanMu.getUrl(), JsonNode.class, Connection.Method.POST,params);
             if(jsonNode==null){
                 break;
             }
@@ -496,7 +496,7 @@ public class DownLoadUtil {
                     try {
                         FileUtils.deleteDirectory(file);
                     } catch (IOException e) {
-                        LogUtil.outPutLog(LogUtil.getLineInfo(),e);
+                        log.error(e);
                     }
                 }
             }

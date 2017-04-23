@@ -1,7 +1,8 @@
 package org.pqh.task;
 
 import org.apache.log4j.Logger;
-import org.pqh.test.Test;
+import org.pqh.service.InsertService;
+import org.pqh.util.ThreadUtil;
 
 import java.util.Observable;
 import java.util.Observer;
@@ -17,7 +18,9 @@ public class Listener implements Observer {
         log.error("TaskBili线程出现异常");
         TaskBili taskBili= (TaskBili) arg;
         taskBili.addObserver(this);
-        Test.excute(new Thread(taskBili,"insertBili"));
+        Thread thread=new Thread(taskBili,"insertHistory");
+        InsertService.stop=false;
+        ThreadUtil.excute(thread);
         log.error("TaskBili线程重启");
     }
 }

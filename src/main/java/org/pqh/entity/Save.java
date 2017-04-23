@@ -18,6 +18,16 @@ public class Save {
         this.latest = latest;
     }
 
+    @Override
+    public String toString() {
+        return "Save{" +
+                "id=" + id +
+                ", 进度='" + bilibili + '\'' +
+                ", 最后更新时间=" + lastUpdateTime +
+                ", 是否更到最新=" + latest +
+                '}';
+    }
+
     public boolean isLatest() {
         return latest;
     }

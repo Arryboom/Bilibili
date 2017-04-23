@@ -42,4 +42,13 @@ public class Param implements Serializable{
     public void setValue(String value) {
         this.value = value;
     }
+
+    @Override
+    public String toString() {
+        return "Param{" +
+                "key='" + key + '\'' +
+                ", value='" + value + '\'' +
+                ", desc='" + desc + '\'' +
+                '}';
+    }
 }

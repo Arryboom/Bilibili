@@ -1,6 +1,5 @@
 package org.pqh.task;
 
-import org.apache.log4j.Logger;
 import org.pqh.entity.Bili;
 import org.pqh.qq.DoSoming;
 import org.pqh.qq.QueryRule;
@@ -21,7 +20,6 @@ public class TaskQuery implements Runnable {
     @Resource
     private QueryRule queryA;
 
-    private static Logger log= Logger.getLogger(TaskQuery.class);
     @Override
     public void run() {
         if(DoSoming.groupFromID.size()>0&&queryA.check(bili)){

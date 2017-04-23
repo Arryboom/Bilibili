@@ -10,6 +10,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -18,7 +20,7 @@ import java.util.regex.Pattern;
  */
 public class StringUtil {
     private static Logger log= Logger.getLogger(StringUtil.class);
-    private String json;
+    private final String json;
     public StringUtil(String json){
         this.json=json;
 
@@ -52,24 +54,91 @@ public class StringUtil {
     }
 
     /**
-     * uncoide解码
-     * @param utfString
+     * 正则表达式匹配
+     * @param str 匹配字符串
+     * @param regex 正则表达式
+     * @param c 返回类型
+     * @param <T>
      * @return
      */
-    public static  String convert(String utfString){
+    public static <T>T matchStr(String str,String regex,Class<T> c){
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(str);
+        String s=null;
+        List<String> list=null;
+        while (matcher.find()) {
+            s=matcher.group();
+            log.debug("匹配结果"+s);
+            if(c==String.class) {
+                return (T)s;
+            }else if(c==List.class){
+                if(list==null){
+                    list=new ArrayList<>();
+                }
+                list.add(s);
+            }
+        }
+        if(s==null){
+            return null;
+        }else if(c==String.class){
+            return (T) s;
+        }else if(c==List.class){
+            return (T) list;
+        }else{
+            return null;
+        }
+
+    }
+
+    /**
+     * uncoide解码
+     * @param str
+     * @return
+     */
+    public static String convert(String str){
         StringBuilder sb = new StringBuilder();
         int i = -1;
         int pos = 0;
 
-        while((i=utfString.indexOf("\\u", pos)) != -1){
-            sb.append(utfString.substring(pos, i));
-            if(i+5 < utfString.length()){
+        while((i=str.indexOf("\\u", pos)) != -1){
+            sb.append(str.substring(pos, i));
+            if(i+5 < str.length()){
                 pos = i+6;
-                sb.append((char)Integer.parseInt(utfString.substring(i+2, i+6), 16));
+                sb.append((char)Integer.parseInt(str.substring(i+2, i+6), 16));
             }
         }
-        sb.append(utfString.substring(pos));
+        sb.append(str.substring(pos));
         return sb.toString();
+    }
+
+    /**
+     * uncoide解码
+     *
+     * @return
+     */
+    public   String convert(){
+        String sb=convert(json);
+
+        String strs[]=new String[]{"{","}","[","]","(",")"};
+        boolean flag[]=new boolean[12];
+        for(int j=0;j<strs.length;j++){
+            flag[j*2]=sb.contains(strs[j]);
+            if(!flag[j*2]){
+                flag[j*2+1]=flag[j*2];
+                continue;
+            }
+            flag[j*2+1]=sb.toString().startsWith(strs[j]);
+        }
+        if(flag[1]&&flag[3]){
+            return sb.substring(sb.indexOf(strs[0]),sb.lastIndexOf(strs[1]));
+        }else if(flag[5]&&flag[7]){
+            return sb.substring(sb.indexOf(strs[2]),sb.lastIndexOf(strs[3]));
+        }else if(flag[8]&&flag[10]&&sb.endsWith(";")){
+            return sb.substring(sb.indexOf(strs[4])+1,sb.lastIndexOf(strs[5]));
+        }else{
+            return fuckJson().toString();
+        }
+
     }
 
     public String getVal(String k,String s){
@@ -148,7 +217,7 @@ public class StringUtil {
      * @return
      */
     public  String jsonValueEscape(String... keywords){
-
+        String returnJson="";
         for(String keyword:keywords) {
             String s=null;
             if(!keyword.equals("subtitle")||keyword.equals("subtitle")&&json.contains("\"duration\":")){
@@ -161,13 +230,14 @@ public class StringUtil {
                 continue;
             }
             String title = getVal(k,s);
+
             if(title.contains("\"")&&!title.contains("\\\"")){
-                json = json.replace( title,  title.replace("\"", "\\\""));
+                returnJson = json.replace( title,  title.replace("\"", "\\\""));
             }
 
         }
 
-        return json;
+        return returnJson;
     }
 
 }

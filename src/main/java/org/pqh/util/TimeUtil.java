@@ -52,4 +52,25 @@ public class TimeUtil{
             throw new RuntimeException("无法按照\t\""+format+"\"\t格式解析日期");
         }
     }
+
+    /**
+     * 检查日期格式有效性
+     * @param date 日期
+     * @return
+     */
+    public static boolean checkDate(int index,String date){
+        String formats[]=new String[]{DATE,DATETIME};
+        try {
+            new SimpleDateFormat(TimeUtil.DATETIME).parse(date);
+            return true;
+        } catch (ParseException e) {
+            if(index==formats.length-1){
+                return false;
+            }else{
+                return checkDate(index++,date);
+            }
+
+        }
+
+    }
 }

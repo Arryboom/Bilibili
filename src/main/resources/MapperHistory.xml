@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.pqh.dao.BiliHistoryDao">
+    <cache type="org.pqh.redis.RedisCache"/>
+
+    <insert id="insertHistory">
+
+                INSERT INTO history_data (aid, tid, tname, copyright, pic, title, pubdate, ctime, `desc`, state, attribute, reject, duration, tags, rights, owner, stat, view_at, favorite,access)
+        VALUES (#{aid},#{tid},#{tname},#{copyright},#{pic},#{title},#{pubdate},#{ctime},#{desc},#{state},#{attribute},#{reject},#{duration},#{tags},#{rights},#{owner},#{stat},#{view_at},#{favorite},#{access});
+    </insert>
+
+    <update id="updateHistory">
+        UPDATE history_data SET tid=#{tid},tname=#{tname},copyright=#{copyright},pic=#{pic},title=#{title},pubdate=#{pubdate},ctime=#{ctime},`desc`=#{desc},state=#{state},attribute=#{attribute},reject=#{reject},duration=#{duration},tags=#{tags},rights=#{rights},owner=#{owner},stat=#{stat},view_at=#{view_at},favorite=#{favorite},access=#{access} WHERE aid = #{aid};
+    </update>
+</mapper>

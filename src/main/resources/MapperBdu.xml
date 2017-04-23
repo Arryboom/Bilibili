@@ -1,31 +1,107 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//ibatis.apache.org//DTD Mapper 3.0//EN"
-        "http://ibatis.apache.org/dtd/mybatis-3-mapper.dtd">
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="org.pqh.dao.BduDao">
     <cache type="org.pqh.redis.RedisCache"/>
 
 
-    <select id="selectTsdm" parameterType="String" resultType="org.pqh.entity.Tsdm">
-        SELECT * FROM tsdm WHERE animeName=#{animeName}
-    </select>
+    <select id="selectTsdm" resultType="org.pqh.entity.Tsdm" >
+        SELECT animeName,tsdmUrl,playTime,updateTime,copyright,bangumi,lastUpdateTimes,
+        json_unquote(json_extract(bangumi,'$.biliId')) AS biliId,json_unquote(json_extract(bangumi,'$.iqiyiId')) AS iqiyiId,json_unquote(json_extract(bangumi,'$.youkuId')) AS youkuId,
+        json_unquote(json_extract(bangumi,'$.biliUrl')) AS biliUrl,json_unquote(json_extract(bangumi,'$.iqiyiUrl')) AS iqiyiUrl,json_unquote(json_extract(bangumi,'$.youkuUrl')) AS youkuUrl
+        FROM tsdm
+        <where>
+            <if test="tsdmUrl!=null">
+                AND tsdmUrl!=''
+            </if>
+            <if test="animeName!=null">
+                AND animeName=#{animeName}
+            </if>
+            <if test="updateTime!=null">
+                AND updateTime LIKE '%${updateTime}'
+            </if>
+            <if test="copyright!=null">
+                AND copyright like '%${copyright}%'
+            </if>
+        </where>
 
-    <select id="selectUpdate" parameterType="String" resultType="org.pqh.entity.Tsdm">
-        SELECT * FROM tsdm WHERE updateTime LIKE #{updateTime}
-    </select>
-
-    <select id="selectAllTsdm" resultType="org.pqh.entity.Tsdm">
-        SELECT * FROM tsdm WHERE tsdmUrl!='';
     </select>
 
     <insert id="insertTsdm" parameterType="org.pqh.entity.Tsdm">
-        INSERT INTO tsdm (animeName, tsdmUrl, playTime,updateTime,copyright,lastUpdateTime) VALUES (#{animeName},#{tsdmUrl},#{playTime},#{updateTime},#{copyright},#{lastUpdateTime})
+        INSERT INTO tsdm (animeName, playTime,updateTime,copyright) VALUES (#{animeName},#{playTime},#{updateTime},#{copyright})
     </insert>
 
     <update id="updateTsdm" parameterType="org.pqh.entity.Tsdm">
-        UPDATE tsdm SET lastUpdateTime=#{lastUpdateTime},playTime=#{playTime},updateTime=#{updateTime} WHERE animeName=#{animeName}
+        UPDATE tsdm
+        <set>
+            <if test="lastUpdateTimes!=null and index!=null">
+                lastUpdateTimes=JSON_SET(lastUpdateTimes,concat('$."','${index}"'),#{lastUpdateTimes}),
+            </if>
+            <if test="biliId!=null">
+                bangumi=JSON_SET(bangumi,'$.biliId',#{biliId}),
+            </if>
+            <if test="iqiyiId!=null">
+                bangumi=JSON_SET(bangumi,'$.iqiyiId',#{iqiyiId}),
+            </if>
+            <if test="youkuId!=null">
+                bangumi=JSON_SET(bangumi,'$.youkuId',#{youkuId}),
+            </if>
+            <if test="biliUrl!=null">
+                bangumi=JSON_SET(bangumi,'$.biliUrl',#{biliUrl}),
+            </if>
+            <if test="iqiyiUrl!=null">
+                bangumi=JSON_SET(bangumi,'$.iqiyiUrl',#{iqiyiUrl}),
+            </if>
+            <if test="youkuUrl!=null">
+                bangumi=JSON_SET(bangumi,'$.youkuUrl',#{youkuUrl})
+            </if>
+
+        </set>
+        WHERE animeName=#{animeName}
+
     </update>
 
     <insert id="insertBdu" parameterType="org.pqh.entity.Bdu" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO baiduyun (url, password, `desc`) VALUES (#{url},#{password},#{desc});
+        INSERT INTO baiduyun (url, password, `desc` , animeName) VALUES (#{url},#{password},JSON_SET('{}','$.subtitle',#{subtitle},'$.episode',#{episode},'$.remark',#{remark}),#{animeName});
     </insert>
+
+    <update id="updateBdu" parameterType="org.pqh.entity.Bdu">
+        UPDATE baiduyun
+        <set>
+            <if test="password!=null">
+                password=#{password},
+            </if>
+            <if test="animeName!=null">
+                animeName=#{animeName},
+            </if>
+            <if test="subtitle!=null">
+                `desc`=JSON_SET(`desc`,'$.subtitle',#{subtitle}),
+            </if>
+            <if test="episode!=null">
+                `desc`=JSON_SET(`desc`,'$.episode',#{episode}),
+            </if>
+            <if test="remark!=null">
+                `desc`=JSON_SET(`desc`,'$.remark',#{remark})
+            </if>
+        </set>
+        WHERE url=#{url}
+    </update>
+
+    <select id="selectBdu" resultType="org.pqh.entity.Bdu">
+        SELECT id,url,password,animeName,json_unquote(json_extract(`desc`,'$.subtitle')) AS subtitle,
+        json_unquote(json_extract(`desc`,'$.episode')) AS episode,json_unquote(json_extract(`desc`,'$.remark')) AS remark
+        FROM baiduyun
+        <where>
+            <if test="animeName!=null">
+                AND animeName=#{animeName}
+            </if>
+            <if test="subtitle!=null">
+                AND json_extract(`desc`,'$.subtitle') LIKE '%${subtitle}%'
+            </if>
+            <if test="episode!=null">
+                AND json_extract(`desc`,'$.episode')=#{episode}
+            </if>
+        </where>
+    </select>
+
 </mapper>

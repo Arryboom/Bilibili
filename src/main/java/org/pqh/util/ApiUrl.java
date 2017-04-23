@@ -1,16 +1,14 @@
 package org.pqh.util;
 
-import java.util.HashMap;
-import java.util.Map;
-
 /**
  * Created by reborn on 2017/3/3.
+ * Api常量，构建带参数Api
  */
 public enum ApiUrl {
     //续期accessKey接口
     accessKey("https://passport.bilibili.com/api/oauth?access_key="),
     //用AV号读取视频信息接口
-    AID("http://api.bilibili.com/view?{0}"),
+    AID("http://api.bilibili.com/view"),
     //B站播放地址
     AV("http://www.bilibili.com/video/av{0}/index_{1}.html"),
     //用弹幕编号读取视频信息接口
@@ -24,7 +22,7 @@ public enum ApiUrl {
     //用弹幕编号读取视频信息接口（包括被删视频信息）
     vstorage("http://api.bilibili.com/vstorage/state?cid={0}"),
     //获取正版番剧信息接口
-    bangumi("http://www.bilibili.com/api_proxy?"),
+    bangumi("http://www.bilibili.com/api_proxy?app=bangumi&action=get_season_by_tag_v2&tag_id={0}&page=1&pagesize=50&indexType=0"),
     //根据关键字搜索专题
     bangumiSearch("http://search.bilibili.com/bangumi?keyword={0}"),
     //番剧专题接口
@@ -46,7 +44,7 @@ public enum ApiUrl {
     //天使论坛主页
     tsdm("http://www.tsdm.me/"),
     //天使论坛音乐索引页面
-    tsdmMusicIndex(tsdm.getUrl()+"/forum.php?mod=viewthread&tid=104454"),
+    tsdmMusicIndex(tsdm.getUrl(0)+"/forum.php?mod=viewthread&tid=104454"),
     //弹幕xml文档地址
     danMu("http://comment.bilibili.com/{0}.xml"),
     //获取弹幕池历史新增弹幕的时间戳
@@ -67,44 +65,70 @@ public enum ApiUrl {
     acgdoge("http://www.acgdoge.net/"),
     //软媒IT之家
     ithome("http://www.ithome.com/"),
-    //爱奇艺番剧合集播放地址
+    //爱奇艺番剧合集信息
     iqiyi("http://search.video.iqiyi.com/m?if=video_library&video_library_type=play_source&platform=1&key={0}"),
     //爱奇艺番剧关键字搜索
     iqiyiSerach("http://so.iqiyi.com/so/q_{0}"),
-    //优酷番剧关键字搜索
-    youkuSerach("http://www.soku.com/search_video/q_{0}"),
+    //爱奇艺动漫专题
+    iqiyiBangumi("http://www.iqiyi.com/dongman"),
+    //爱奇艺番剧播放列表
+    iqiyiPlay("http://www.iqiyi.com/a_{0}.html"),
+    //优酷正版新番放送表
+    youkuBangumi("http://comic.youku.com/bangumi"),
+    //优酷番剧合集信息
+    youku("http://play-dxk.youku.com/play/get.json?vid={0}==&ct=10"),
     //优酷番剧播放
     youkuPlay("http://v.youku.com/v_show/id_{0}.html"),
     //优酷弹幕池
     youkuDanMu("http://service.danmu.youku.com/pool"),
     //pptv弹幕池
-    pptvDanMu("http://apicdn.danmu.pptv.com/danmu/v2/pplive/ref/vod_{0}/danmu?pos={1}")
+    pptvDanMu("http://apicdn.danmu.pptv.com/danmu/v2/pplive/ref/vod_{0}/danmu?pos={1}"),
+    //获取B站播放历史纪录
+    biliHistory("http://api.bilibili.com/x/v2/history?access_key={0}&pn={1}&ps={2}","http://api.bilibili.com/x/v2/history/{0}"),
+    //B站视频源地址
+    biliVideoUrl("http://vs{0}.acg.tv{1}")
     ;
-    private String url;
+    private  final String url;
 
-    public static Map<String,String> map=new HashMap<>();
+    private  final String url1;
 
-    static {
-        for(ApiUrl apiUrl:ApiUrl.values()){
-            map.put(apiUrl.name(),apiUrl.getUrl());
-        }
-    }
-
-    public String getUrl(Object ...values){
-        this.url=map.get(this.name());
-        for(int i=0;i<values.length;i++){
-         this.url=this.url.replace("{"+i+"}",values[i].toString());
-        }
-        return url;
-    }
-
-    public String getUrl() {
-        return url;
-    }
-
+    private int index;
 
     ApiUrl(String url) {
-        this.url =url;
+        this.url=url;
+        url1 = null;
     }
+
+    public ApiUrl s(int index) {
+        this.index = index;
+        return this;
+    }
+
+    ApiUrl(String url, String url1) {
+        this.url = url;
+        this.url1 = url1;
+    }
+
+    public String getUrl(){
+        switch (this.index){
+            case 1:return this.url;
+            case 2:return this.url1;
+            default:return this.url;
+        }
+    }
+
+    public String getUrl(Object ...obj){
+        String buildUrl=getUrl();
+        if(buildUrl==null){
+            return null;
+        }
+        for(int j=0;j<obj.length;j++){
+            buildUrl=buildUrl.replace("{"+j+"}",obj[j].toString());
+        }
+        return buildUrl;
+    }
+
+
+
 
 }

@@ -17,8 +17,8 @@ import java.util.zip.CheckedInputStream;
 
 /**
  * Created by 10295 on 2016/7/16.
+ * 加密工具类
  */
-
 public class AlgorithmUtil {
     private static Logger log=Logger.getLogger(AlgorithmUtil.class);
     public final static String MD5(String s) {

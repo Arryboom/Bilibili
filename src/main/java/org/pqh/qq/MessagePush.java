@@ -1,6 +1,5 @@
 package org.pqh.qq;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
@@ -12,6 +11,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
+import org.pqh.entity.Bangumi;
 import org.pqh.entity.Bdu;
 import org.pqh.entity.Param;
 import org.pqh.entity.Tsdm;
@@ -24,319 +24,438 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.util.*;
 
 import static org.pqh.util.SpringContextHolder.bduDao;
 import static org.pqh.util.SpringContextHolder.biliDao;
+
 /**
  * 信息推送
  * Created by reborn on 2017/3/29.
  */
 @Component
 public class MessagePush {
-    private static Logger log= Logger.getLogger(MessagePush.class);
+    private static Logger log = Logger.getLogger(MessagePush.class);
 
-    public static boolean acgdoge=true;
-
-    public static boolean ithome=false;
 
     public static List<Tsdm> todayTsdms;
 
-    private static Map<String,Map<String,String>> pushUrl = new HashMap<>();
+    private static Map<String, Map<String, String>> pushUrl = new HashMap<>();
 
-    public void put(String animeName,String videoSite,String url){
-        Map<String,String> map=pushUrl.get(animeName);
-        String value=map.get(videoSite);
-        if(value==null){
-            DoSoming.messagePush(url);
-            map.put(videoSite,url);
-            pushUrl.put(animeName,map);
+    public void put(String animeName,String title, String videoSite, String url) {
+        Map<String, String> map =pushUrl.get(animeName);
+        if(map==null){
+            map=new HashMap<>();
+        }
+        String value = map.get(videoSite);
+        if (value == null) {
+            DoSoming.messagePush(animeName+"\t"+title+"\t已更新,传送门："+url);
+            map.put(videoSite, url);
+            pushUrl.put(animeName, map);
         }
     }
 
     //    @Resource
 //    private BiliDao biliDao;
     @Scheduled(cron = "0 0 0/1 * * ?")
-    public  void acgdoge(){
-        if(!acgdoge){
-            return;
-        }
+    public void acgdoge() {
 
-        Document document=null;
-        int count=0;
-        while(document==null&&count<3){
-            document= CrawlerUtil.jsoupGet(ApiUrl.acgdoge.getUrl(),Document.class, Connection.Method.GET);
+
+        Document document = null;
+        int count = 0;
+        while (document == null && count < 3) {
+            document = CrawlerUtil.jsoupGet(ApiUrl.acgdoge.getUrl(), Document.class, Connection.Method.GET);
             count++;
         }
 
-        Param param=biliDao.selectParam("acgdoge");
-        int a=0;
-        int b=Integer.parseInt(param.getValue());
+        Param param = biliDao.selectParam("acgdoge").get(0);
+        int a = 0;
+        int b = Integer.parseInt(param.getValue());
 
-        Elements articles=document.select("#content>article");
-        List<String> msgs=new ArrayList<>();
-        for(int i=articles.size()-1;i>=0;i--){
-            Element article=articles.get(i);
-            Element title=article.select("h2.post_h>a").first();
+        Elements articles = document.select("#content>article");
+        List<java.lang.String> msgs = new ArrayList<>();
+        for (int i = articles.size() - 1; i >= 0; i--) {
+            Element article = articles.get(i);
+            Element title = article.select("h2.post_h>a").first();
 
-            String href=title.attr("href");
-            a=Integer.parseInt(href.substring(href.lastIndexOf("/")+1));
-            if(a>b){
-                String type=article.select("span.post_ct").text();
-                List<String> tags=new ArrayList<>();
-                for(Element e:article.select("div.post_tag>a")){
+            String href = title.attr("href");
+            a = Integer.parseInt(href.substring(href.lastIndexOf("/") + 1));
+            if (a > b) {
+                String type = article.select("span.post_ct").text();
+                List<String> tags = new ArrayList<>();
+                for (Element e : article.select("div.post_tag>a")) {
                     tags.add(e.text());
                 }
-                String msg=type+"\t\""+title.text()+"\"\t传送门："+href+"\n标签："+tags;
+                String msg = type + "\t\"" + title.text() + "\"\t传送门：" + href + "\n标签：" + tags;
                 log.info(msg);
                 msgs.add(msg);
             }
         }
-        DoSoming.messagePush(msgs);
-        param.setValue(a+"");
+        if (DoSoming.flag.get("acgdoge")) {
+            DoSoming.messagePush(msgs);
+        }
+        param.setValue(a + "");
         biliDao.updateParam(param);
     }
 
     @Scheduled(cron = "0 0/10 * * * ?")
-    public void ithome(){
-        if(!ithome){
-            return;
-        }
+    public void ithome() {
 
-        Document document= null;
-        int count=0;
-        while(document==null&&count<3){
-            document= CrawlerUtil.jsoupGet(ApiUrl.ithome.getUrl(),Document.class, Connection.Method.GET);
+        Document document = null;
+        int count = 0;
+        while (document == null && count < 3) {
+            document = CrawlerUtil.jsoupGet(ApiUrl.ithome.getUrl(), Document.class, Connection.Method.GET);
             count++;
         }
 
-        Param param=biliDao.selectParam("ithome");
-        int a=0;
-        int b=Integer.parseInt(param.getValue());
+        Param param = biliDao.selectParam("ithome").get(0);
+        int a = 0;
+        int b = Integer.parseInt(param.getValue());
 
-        Elements newList=document.select("div.block.new-list-1>ul:eq(0)>li.new>span.title>a");
-        List<String> msgs=new ArrayList<>();
-        for(int i=newList.size()-1;i>=0;i--){
-            Element _new =newList.get(i);
-            String href=_new.attr("href");
-            String text=_new.text();
-            a=Integer.parseInt(href.substring(href.lastIndexOf("/")+1).replaceAll("\\D+",""));
-            if(a>b){
-                String msg=text+"\t传送门："+href;
+        Elements newList = document.select("div.block.new-list-1>ul:eq(0)>li.new>span.title>a");
+        List<String> msgs = new ArrayList<>();
+        for (int i = newList.size() - 1; i >= 0; i--) {
+            Element _new = newList.get(i);
+            String href = _new.attr("href");
+            String text = _new.text();
+            a = Integer.parseInt(href.substring(href.lastIndexOf("/") + 1).replaceAll("\\D+", ""));
+            if (a > b) {
+                String msg = text + "\t传送门：" + href;
                 log.info(msg);
                 msgs.add(msg);
             }
         }
-        DoSoming.messagePush(msgs);
-        param.setValue(a+"");
+        if (DoSoming.flag.get("ithome")) {
+            DoSoming.messagePush(msgs);
+        }
+        param.setValue(a + "");
         biliDao.updateParam(param);
     }
 
-    public void parseYouku(String animeName){
-        Document document=null;
-        try {
-            document=CrawlerUtil.jsoupGet(ApiUrl.youkuSerach.getUrl(URLEncoder.encode(animeName,"UTF-8")),Document.class, Connection.Method.GET);
-            Elements a=document.select("h2.base_name>a[target=_blank]");
-            int log_sid=0;
-            for(Element href:a){
-                int _log_sid=Integer.parseInt(href.attr("_log_sid"));
-                if(_log_sid>log_sid){
-                    log_sid=_log_sid;
-                }
-            }
-            String link=document.select("h2.base_name>a[_log_sid="+log_sid+"]").attr("href");
-            document=CrawlerUtil.jsoupGet("http:"+link,Document.class, Connection.Method.GET);
-            if(document.select(".p-btn.p-btn-gray").size()>0){
-                log.info(animeName+"\t未开播");
-            }else {
-                link = document.select(".p-play>a").attr("href");
-                document = CrawlerUtil.jsoupGet("http:" + link, Document.class, Connection.Method.GET);
-                log.info("优酷番剧播放列表地址：" + "http:" + link);
-                String tvintro = document.select("#Drama p.tvintro").text();
-                String msg=animeName + "\t" + tvintro;
-                log.info(msg);
-                put(animeName,"youku",msg);
-            }
-
-
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
-
-    }
-
-    public void parseBilibili(String animeName){
-        Document document=null;
-        try {
-            document=CrawlerUtil.jsoupGet(ApiUrl.bangumiSearch.getUrl(URLEncoder.encode(animeName,"UTF-8")),Document.class, Connection.Method.GET);
-            Elements elements=document.select("a[href^=//bangumi.bilibili.com/anime/]");
-            if(elements.size()>0) {
-                String sessionId = elements.first().attr("href").split("\\?")[0].replaceAll("\\D+", "");
-                document=CrawlerUtil.jsoupGet(ApiUrl.bangumiAnime.getUrl(sessionId),Document.class, Connection.Method.GET);
-                String jsonStr=document.body().html();
-                jsonStr=jsonStr.substring(jsonStr.indexOf("{"),jsonStr.lastIndexOf("}"))+"}";
-                JsonNode jsonNode=new ObjectMapper().readTree(jsonStr).get("result").get("episodes");
-                if(jsonNode.size()>0){
-                    jsonNode=jsonNode.get(0);
-                    String av=jsonNode.get("av_id").asText();
-                    String index_title=jsonNode.get("index_title").asText();
-                    String index=jsonNode.get("index").asText();
-                    String msg=animeName+"\t已更新第"+index+"集\t"+index_title+"\n传送门:"+ApiUrl.AV.getUrl(av,1);
-                    log.info(msg);
-                    put(animeName,"Bilibili",ApiUrl.AV.getUrl(av,1));
+    public void parseYoukuId(){
+        Tsdm tsdm=new Tsdm();
+        tsdm.setCopyright("优酷");
+        List<Tsdm> tsdms=bduDao.selectTsdm(tsdm);
+        Document document = CrawlerUtil.jsoupGet(ApiUrl.youkuBangumi.getUrl(), Document.class, Connection.Method.GET);
+        for(Tsdm t:tsdms) {
+            Elements as=null;
+            String name=t.getAnimeName();
+            do {
+                as = document.select(".part02_list li:contains(" + name + ")");
+                if(as.size()!=1){
+                    log.info(as);
+                    log.info("无法准确从优酷新番放松表找到这部番剧："+name+"请输入别名");
+                    Scanner sc=new Scanner(System.in);
+                    name=sc.nextLine();
                 }else{
-                    log.info(animeName+"\t没开播");
+                    break;
                 }
+            }while (true);
+            String link=as.select("a").attr("href");
+            Document document1=CrawlerUtil.jsoupGet(link,Document.class, Connection.Method.GET);
+            link=document1.select(".p-thumb>a").attr("href");
+            String youku_id=link.substring(link.lastIndexOf("_")+1,link.indexOf("=="));
+            t.setYoukuId(youku_id);
+            bduDao.updateTsdm(t);
+        }
+    }
+
+    public void parseYouku(Tsdm tsdm) {
+        if(tsdm.getYoukuId()==null){
+            log.info(tsdm.getAnimeName()+"\tyoukuId没有入库无法获取番剧更新信息");
+            return;
+        }
+        JsonNode jsonNode=CrawlerUtil.jsoupGet(ApiUrl.youku.getUrl(tsdm.getYoukuId()),JsonNode.class, Connection.Method.GET);
+        jsonNode=jsonNode.get("data").get("videos").get("list");
+        jsonNode=jsonNode.get(jsonNode.size()-1);
+        String title=jsonNode.get("title").asText();
+        String encodevid=jsonNode.get("encodevid").asText();
+        String url=ApiUrl.youkuPlay.getUrl(encodevid);
+
+        if(StringUtils.isEmpty(tsdm.getYoukuUrl())||!tsdm.getYoukuUrl().equals(url)){
+            tsdm.setYoukuUrl(url);
+            log.info(tsdm.getAnimeName()+" "+title+"传送门："+url);
+            bduDao.updateTsdm(tsdm);
+            put(tsdm.getAnimeName(),title,"youku",url);
+        }
+
+    }
+
+    public void parseBiliId(){
+        Tsdm tsdm=new Tsdm();
+        tsdm.setCopyright("bili");
+        List<Tsdm> tsdms=bduDao.selectTsdm(tsdm);
+        for(Tsdm t:tsdms){
+            List<Bangumi> bangumis;
+            String name=t.getAnimeName();
+            do{
+                bangumis=biliDao.selectBangumi(new Bangumi(null,null,name));
+                if(bangumis.size()!=1){
+                    log.info(bangumis);
+                    log.info("无法准确从bili番剧表找到这部番剧："+name+"请输入别名");
+                    Scanner sc=new Scanner(System.in);
+                    name=sc.nextLine();
+                }else{
+                    break;
+                }
+            }while (true);
+            t.setBiliId(bangumis.get(0).getSeasonId()+"");
+            bduDao.updateTsdm(t);
+        }
+    }
+
+    public void parseBilibili(Tsdm tsdm) {
+        if(tsdm.getBiliId()==null){
+            log.info(tsdm.getAnimeName()+"\tbiliId没有入库无法获取番剧更新信息");
+            return;
+        }
+        JsonNode jsonNode = CrawlerUtil.jsoupGet(ApiUrl.bangumiAnime.getUrl(tsdm.getBiliId()), JsonNode.class, Connection.Method.GET);
+        jsonNode = jsonNode.get("result").get("episodes");
+        if (jsonNode.size() > 0) {
+            jsonNode = jsonNode.get(0);
+            String av = jsonNode.get("av_id").asText();
+            String index_title = jsonNode.get("index_title").asText();
+            String index = jsonNode.get("index").asText();
+            String url=ApiUrl.AV.getUrl(av, 1);
+            if(StringUtils.isEmpty(tsdm.getBiliUrl())||!tsdm.getBiliUrl().equals(url)) {
+                tsdm.setBiliUrl(url);
+                bduDao.updateTsdm(tsdm);
+                String msg = tsdm.getAnimeName() + "\t已更新第" + index + "集\t" + index_title + "\n传送门:" + url;
+                log.info(msg);
+                put(tsdm.getAnimeName(), index_title, "Bilibili", url);
             }
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+        } else {
+            log.info(tsdm.getAnimeName() + "\t没开播");
         }
 
     }
 
-    public void parseiqiyi(String animeName){
-        Document document;
-        String href=null;
-        try {
-            document=CrawlerUtil.jsoupGet(ApiUrl.iqiyiSerach.getUrl(URLEncoder.encode(animeName,"UTF-8")),Document.class, Connection.Method.GET);
-            href=document.select("a[title="+ animeName+"]").attr("href");
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
+    public void parseiqiyiId(){
+        Tsdm tsdm=new Tsdm();
+        tsdm.setCopyright("爱奇艺");
+        List<Tsdm> tsdms=bduDao.selectTsdm(tsdm);
+        Document document=CrawlerUtil.jsoupGet(ApiUrl.iqiyiBangumi.getUrl(),Document.class, Connection.Method.GET);
+        Elements elements=document.select("#widget-tab-0 > div.o-hidden .site-piclist_info_title>a");
+        for(Tsdm t:tsdms){
+            List<Bangumi> bangumis;
+            String name=t.getAnimeName();
+            Elements as=null;
+            do{
+                as=elements.select(":contains("+name+")");
+                if(as.size()!=1){
+                    log.info(as);
+                    log.info("无法准确从爱奇艺新番放松表找到这部番剧："+name+"请输入别名");
+                    Scanner sc=new Scanner(System.in);
+                    name=sc.next();
+                }else{
+                    break;
+                }
 
-        document=CrawlerUtil.jsoupGet(href,Document.class, Connection.Method.GET);
-        String id=document.select(".play_source").attr("data-doc-id");
-        if(id.equals("")){
-            log.info(animeName+"\t没有开播");
-        }else{
-            JsonNode jsonNode=CrawlerUtil.jsoupGet(ApiUrl.iqiyi.getUrl(id),JsonNode.class, Connection.Method.GET).get("video_info");
-            jsonNode=jsonNode.get(jsonNode.size()-1);
-            String title=jsonNode.get("title").asText();
-            String play_url=jsonNode.get("play_url").asText();
-            String msg=title+"\t已更新，播放地址："+play_url;
+            }while (true);
+            document=CrawlerUtil.jsoupGet(as.attr("href"),Document.class,Connection.Method.GET);
+            String href=document.select("a.c999").last().attr("href");
+            String iqiyiID=href.substring(href.lastIndexOf("_")+1,href.lastIndexOf("."));
+            t.setIqiyiId(iqiyiID);
+            bduDao.updateTsdm(t);
+        }
+    }
+
+    public void parseiqiyi(Tsdm tsdm) {
+        if(tsdm.getIqiyiId()==null){
+            log.info(tsdm.getAnimeName()+"\tiqiyiID没有入库无法获取番剧更新信息");
+            return;
+        }
+        Document document=CrawlerUtil.jsoupGet(ApiUrl.iqiyiPlay.getUrl(tsdm.getIqiyiId()),Document.class, Connection.Method.GET);
+        Element as=document.select(".wrapper-piclist li:not(:contains(预告)) a").last();
+        String href=as.attr("href");
+        String title=as.text();
+
+        if(StringUtils.isEmpty(tsdm.getIqiyiUrl())||!tsdm.getIqiyiUrl().equals(href)) {
+            tsdm.setIqiyiUrl(href);
+            bduDao.updateTsdm(tsdm);
+            String msg = title + "\t已更新，播放地址：" + href;
             log.info(msg);
-            put(animeName,"iqiyi",play_url);
+            put(tsdm.getAnimeName(), title, "iqiyi", href);
         }
     }
 
-
-    public void parseUpdateTsdm(String animeName){
-        List<Tsdm> tsdms;
-        if(StringUtil.isEmpty(animeName)){
-            tsdms= bduDao.selectAllTsdm();
-        }else{
-            tsdms=bduDao.selectTsdm(animeName);
-        }
-
-
+    @Scheduled(cron = "0 0/10 * * * ?")
+    public void parseTsdm() {
+        Tsdm t=new Tsdm();
+//        t.setAnimeName("末日时在做什么？有没有空？可以来拯救吗？");
+        t.setTsdmUrl("");
+        List<Tsdm> tsdms=bduDao.selectTsdm(t);
+//        boolean f=true;
         for(Tsdm tsdm:tsdms) {
+//            if(tsdm.getAnimeName().equals("进击的巨人 season 2")){
+//                f=false;
+//            }
+//            if(f){
+//                continue;
+//            }
             log.info(tsdm);
             String url = tsdm.getTsdmUrl();
             Document postmessage = CrawlerUtil.jsoupGet(url, Document.class, Connection.Method.GET);
             //
             Elements pstatus = postmessage.select(".pstatus");
 
-            List<String> list=new ArrayList<>();
-            String lastUpdateTime[]=null;
-            if(!StringUtil.isEmpty(tsdm.getLastUpdateTime())){
-                lastUpdateTime=tsdm.getLastUpdateTime().split(",");
+            JsonNode jsonNode=null;
+            try {
+                jsonNode=new ObjectMapper().readTree(tsdm.getLastUpdateTimes());
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-            for (int i=0;i<pstatus.size();i++) {
-                Element a=pstatus.get(i);
-                Element td=a.parent();
+            for (int i = 0; i < pstatus.size(); i++) {
+                Element a = pstatus.get(i);
+                Element td = a.parent();
 
-                Elements panHref=td.select("a[href*=pan.baidu.com]");
-                if(panHref.size()==0){
+                Elements panHref = td.select("a[href*=pan.baidu.com]");
+                if (panHref.size() == 0) {
                     continue;
                 }
 
 
                 String lastUpdate[] = a.text().split(" ");
-                log.info(Arrays.asList(lastUpdate));
-                Date date = TimeUtil.parseDate(lastUpdate[3] + " " + lastUpdate[4], "yyyy-MM-dd HH:mm");
-                if(lastUpdateTime!=null&&i<=lastUpdateTime.length-1){
-                    Date date1=TimeUtil.parseDate(lastUpdateTime[i], "yyyy-MM-dd HH:mm");
-                    if(date.getTime()>date1.getTime()){
+                log.debug(Arrays.asList(lastUpdate));
+
+                String msg = "";
+                tsdm.setIndex(i);
+                tsdm.setLastUpdateTimes(lastUpdate[3] + " " + lastUpdate[4]);
+                bduDao.updateTsdm(tsdm);
+                if(jsonNode.get(i+"")!=null){
+                    String format="yyyy-MM-dd HH:mm";
+                    Date result = TimeUtil.parseDate(jsonNode.get(i+"").asText(), format);
+                    Date now = TimeUtil.parseDate(lastUpdate[3] + " " + lastUpdate[4], format);
+                    if(result.getTime()<now.getTime()){
                         String num = a.parent().attr("id").replaceAll("\\D", "");
-                        //论坛资源具体楼层链接
-                        String msg="天使论坛已经更新该番剧"+tsdm.getAnimeName()+"资源，传送门："+tsdm.getTsdmUrl()+"#"+num;
+                        msg="天使论坛已经更新该番剧"+tsdm.getAnimeName()+"资源，传送门："+tsdm.getTsdmUrl()+"#"+num;
                         log.info(msg);
-                        DoSoming.messagePush(msg);
-                        //具体资源链接。
+//                        DoSoming.messagePush(msg);
+                    }else{
+                        continue;
+                    }
+                }else{
+//                    continue;
+                }
 
-                        //获取字幕组信息
-                        Elements subs=td.select("strong:has(font:matches([\\[\\【]))");
-                        int index=0;
-                        Elements children=td.children();
-                        //遍历楼层里面的所有百度云链接
-                        for(Element pan :panHref){
-                            String desc="";
-                            if(subs.size()>0&&subs.size()==1){
-                                desc+=subs.first().text();
-                            }else if(subs.size()>1){
-                                //同一个楼层有多个字幕组资源情况下，需要判断当前资源所属字幕组
-                                boolean isLast=subs.get(index).equals(subs.last());
-                                if(isLast){
-                                    desc+=subs.last().text();
-                                }else if(children.indexOf(pan.parent())<children.indexOf(subs.get(index+1).parent())) {
-                                    desc+=subs.get(index).text();
-                                }else{
-                                    desc+=subs.get(++index).text();
-                                }
-                            }
+                //具体资源链接。
 
-                            Element element= pan.previousElementSibling();
-                            Node node= pan.previousSibling();
-                            if(element!=null&&!element.text().isEmpty()) {
-                                String d=element.text().replaceAll("[:：]","");
-                                if(!d.isEmpty()) {
-                                    desc += ";"+d;
-                                }
-                            }
-                            if(node!=null&&!((TextNode) node).isBlank()&&!node.equals(element)){
-                                String d=node.outerHtml().replaceAll("[:：链接：\\.\\s]","");
-                                if(!d.isEmpty()){
-                                    desc+=";"+d;
-                                }
-                            }
+                //获取字幕组信息
+                Elements subs = td.select("strong:matches([\\[\\【]|1280X720|1920X1080|MP4|MKV|GB|BIG5|720P|1080P)");
 
-                            String href= pan.attr("href");
-                            Node pass= pan.nextSibling();
-                            String password=null;
-                            if(pass!=null&&pass.outerHtml().contains("密码")){
-                                password=pass.outerHtml().replaceAll("\\W+","").replaceAll("nbsp","");
-                            }
-
-                            msg="desc="+desc+" href="+href+" password="+password;
-                            log.info(msg);
-                            DoSoming.messagePush(msg);
-
-                            Bdu bdu=new Bdu(href,password,desc);
-                            try {
-                                bduDao.insertBdu(bdu);
-                            }catch (DuplicateKeyException e){
-                                log.error("云盘链接无法入库："+e.getMessage());
-                            }
+                //排除不是字幕组的信息
+                Elements strikes=td.select("strong:has(strike)");
+                subs.removeAll(strikes);
+                List<TextNode> text=new ArrayList<>();
+                if(subs.size()==0){
+                    for(TextNode textNode:td.textNodes()){
+                        if(textNode.text().contains("[")||textNode.text().contains("【")){
+                            text.add(textNode);
                         }
                     }
                 }
-                String time=TimeUtil.formatDate(date, "yyyy-MM-dd HH:mm");
-                log.info(time);
-                list.add(time);
+                boolean flag=subs.size()>0;
+                List list=flag?subs:text;
+                log.info("捕捉到的字幕组信息：\n"+list);
+                int index = 0;
+                List<Node> children = td.childNodes();
+                //遍历楼层里面的所有百度云链接
+                for (Element pan : panHref) {
+                    String subtitle=null;
+                    if(list.size() > 0 ) {
+                        boolean isLast = index==list.size()-1;
+                        Element p=pan;
+                        Node c;
+                        c=(Node) list.get(isLast?index:index+1);
+                        while (!children.contains(c)){
+                            c=c.parent();
+                        }
+                        while (!children.contains(p)){
+                            p=pan.parent();
+                        }
+
+                        if (list.size() == 1 && flag) {
+                            subtitle = ((Elements) list).first().text();
+                        } else if (list.size() > 0 && list.size() == 1 && !flag) {
+                            subtitle = ((TextNode) list.get(0)).text();
+                        } else {
+                            //同一个楼层有多个字幕组资源情况下，需要判断当前资源所属字幕组
+                            if (isLast && flag) {
+                                subtitle = ((Elements) list).last().text();
+                            } else if (isLast && !flag) {
+                                subtitle = ((TextNode) list.get(list.size() - 1)).text();
+                            } else if (c != null && children.indexOf(p) > children.indexOf(c)) {
+                                index++;
+                            }
+                            if (!isLast) {
+                                if (flag) {
+                                    subtitle = ((Element) list.get(index)).text();
+                                } else {
+                                    subtitle = ((TextNode) list.get(index)).text();
+                                }
+                            }
+                        }
+                    }else{
+                        log.error("找不到字幕组信息");
+                    }
+
+                    String episode=null;
+                    Element element = pan.previousElementSibling();
+                    Node node = pan.previousSibling();
+
+                    if (element != null && !element.text().isEmpty()) {
+                        String d = element.text().replaceAll("[:：]", "");
+                        if (!d.isEmpty()) {
+                            episode = d;
+                        }
+                    }
+                    String remark=null;
+                    if (node != null && node instanceof TextNode&&!((TextNode) node).isBlank() && !node.equals(element)) {
+                        remark = ((TextNode) node).text().replaceAll("[:：\\.\\s链鏈接]", "");
+                        if (remark.isEmpty()) {
+                            remark=null;
+                        }
+                    }
+
+                    String href = pan.attr("href");
+                    String password = null;
+
+
+
+                    if(pan.nextElementSibling()!=null&&"font".equals(pan.nextElementSibling().tagName())){
+                        password=pan.nextElementSibling().text();
+                    }else{
+                        Node n=pan.nextSibling();
+                        while (n instanceof Element){
+                            n= n.nextSibling();
+                        }
+                       password=((TextNode)n).text();
+                    }
+                    password = StringUtil.matchStr(password,"\\w{4}",String.class);
+
+                    if(password==null){
+                        log.error("没有密码");
+                    }
+
+                    Bdu bdu=new Bdu(href,password,subtitle,episode,remark,tsdm.getAnimeName());
+                    log.info(bdu);
+
+                    try {
+                        bduDao.insertBdu(bdu);
+                        DoSoming.messagePush(tsdm.getAnimeName() + "资源已更新：" + msg);
+                    } catch (DuplicateKeyException e) {
+                        bduDao.updateBdu(bdu);
+                    }
+                }
 
             }
-            tsdm.setLastUpdateTime(StringUtils.join(list,","));
-            bduDao.updateTsdm(tsdm);
+
+
         }
     }
 
-    public void tsdm(){
+
+    public void tsdm() {
 
         //获取萌娘百科番剧条目
         Document anime = CrawlerUtil.jsoupGet("https://zh.moegirl.org/zh-hans/日本2017年春季动画", Document.class, Connection.Method.GET);
@@ -344,12 +463,12 @@ public class MessagePush {
         Element mw = anime.select("#mw-content-text").first();
 
         for (Element a : anime.select("li.toclevel-1:gt(0)>a")) {
-            Element span=mw.select("[id="+a.attr("href").replace("#","")+"]").first();
+            Element span = mw.select("[id=" + a.attr("href").replace("#", "") + "]").first();
             String title = span.text();
-            if(title.equals("参见")){
+            if (title.equals("参见")) {
                 break;
             }
-            log.info("title="+title);
+            log.info("title=" + title);
             Element dl = span.parent().nextElementSibling();
             int i = 1;
             while (!dl.tagName().equals("dl")) {
@@ -361,7 +480,7 @@ public class MessagePush {
             log.info("时间：" + Arrays.asList(time));
             //格式化开播时间
             String playtime = time[0].replace("起", "");
-            Date formatPlayTime = DateUtils.parseDate(playtime, new String[]{"yyyy年MM月dd日","yyyy年MM月"});
+            Date formatPlayTime = DateUtils.parseDate(playtime, new String[]{"yyyy年MM月dd日", "yyyy年MM月"});
 
             String updatetime = time[1];
             String copyright = "";
@@ -370,7 +489,8 @@ public class MessagePush {
                 copyright = dl.select("dd:contains(中国大陆)").first().text().split("：")[1];
                 log.info("中国大陆放送权：" + copyright);
             }
-            Tsdm tsdm = new Tsdm("", title, formatPlayTime, updatetime, copyright,"");
+            Tsdm tsdm = new Tsdm(title, formatPlayTime, updatetime, copyright);
+
             try {
                 bduDao.insertTsdm(tsdm);
             } catch (DuplicateKeyException e) {
@@ -381,35 +501,46 @@ public class MessagePush {
     }
 
     @Scheduled(cron = "0 0/10 * * * ?")
-    public void check(){
-        for(Tsdm tsdm:todayTsdms){
-            String copyrights[]=tsdm.getCopyright().split("／");
-            log.info(tsdm.getAnimeName()+"版权:"+Arrays.asList(copyrights));
-            for(String copyright:copyrights){
-                if("Bilibili".equals(copyright)){
-                    parseBilibili(tsdm.getAnimeName());
-                }else if("优酷网".equals(copyright)||"土豆网".equals(copyright)){
-                    parseYouku(tsdm.getAnimeName());
-                }else if("爱奇艺".equals(copyright)){
-                    parseiqiyi(tsdm.getAnimeName());
-                }else if(StringUtils.isNotEmpty(tsdm.getTsdmUrl())){
-                    parseUpdateTsdm(tsdm.getAnimeName());
+    public void check() {
+        if(todayTsdms==null){
+            doUpdate();
+        }
+        for (Tsdm tsdm : todayTsdms) {
+            String copyrights[] = tsdm.getCopyright().split("／");
+            log.info(tsdm.getAnimeName() + "版权:" + Arrays.asList(copyrights));
+            if (copyrights != null) {
+                List<String> strings = Arrays.asList(copyrights);
+                if (strings.contains("Bilibili")) {
+                    parseBilibili(tsdm);
+                } else if (strings.contains("优酷网") || strings.contains("土豆网")) {
+                    parseYouku(tsdm);
+                } else if (strings.contains("爱奇艺")) {
+                    parseiqiyi(tsdm);
                 }
+
             }
         }
 
     }
 
+
     @Scheduled(cron = "0 0 0/24 * * ?")
     public void doUpdate() {
-        if (todayTsdms == null || TimeUtil.formatDate(new Date(), "HH:mm").equals("00:00")){
-            String e = TimeUtil.formatDate(new Date(), "E").replace("星期", "每周");
-            todayTsdms = bduDao.selectUpdate(e + "%");
-    }
-        pushUrl = new HashMap<>();
-        List<String> strings=new ArrayList<>();
-        for(Tsdm tsdm:todayTsdms){
-            pushUrl.put(tsdm.getAnimeName(),new HashMap<>());
+        Date date = new Date();
+        String e = TimeUtil.formatDate(date, "E").replace("星期", "每周");
+        String hour = TimeUtil.formatDate(date, "HH:mm");
+        Tsdm t=new Tsdm();
+        t.setUpdateTime(e + "%");
+        todayTsdms = bduDao.selectTsdm(t);
+        boolean flag = "00:00".equals(hour);
+        if (flag) {
+            pushUrl = new HashMap<>();
+        }
+        List<String> strings = new ArrayList<>();
+        for (Tsdm tsdm : todayTsdms) {
+            if (flag) {
+                pushUrl.put(tsdm.getAnimeName(), new HashMap<>());
+            }
             strings.add(tsdm.toString());
         }
         log.info(strings);
@@ -417,15 +548,7 @@ public class MessagePush {
     }
 
     public static void main(String[] args) {
-
-//            new MessagePush().parseiqiyi( "爱丽丝与藏六");
-        //new MessagePush().parseBilibili("小林家的龙女仆");
-//        new MessagePush().parseYouku("重启咲良田");
-        // new MessagePush().parseUpdateTsdm("进击的巨人 season 2");
-
-
-
+        new MessagePush().parseTsdm();
 
     }
-
 }

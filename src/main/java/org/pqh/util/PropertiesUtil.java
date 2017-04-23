@@ -37,7 +37,7 @@ public class PropertiesUtil {
             p.load(inputStream);
             return p;
         } catch (IOException e) {
-            LogUtil.outPutLog(LogUtil.getLineInfo(),e);
+            log.error(e);
             return  null;
         }finally {
             try {
@@ -45,7 +45,7 @@ public class PropertiesUtil {
                     inputStream.close();
                 }
             } catch (IOException e) {
-                LogUtil.outPutLog(LogUtil.getLineInfo(),e);
+                log.error(e);
             }
         }
     }
@@ -58,7 +58,7 @@ public class PropertiesUtil {
      */
     public  void createParam(String key,String value,String desc){
         desc=StringUtil.gbEncoding(desc);
-        Param param=biliDao.selectParam(key);
+        Param param=biliDao.selectParam(key).get(0);
         if(param!=null){
             param.setValue(value);
             param.setDesc("#"+desc);
@@ -141,7 +141,7 @@ public class PropertiesUtil {
                 String key=str.substring(0,index);
                 String value=str.substring(index+1,str.length());
                 Param param=new Param(key,value,desc);
-                if(biliDao.selectParam(key)==null){
+                if(biliDao.selectParam(key).get(0)==null){
                     biliDao.insertParam(param);
                 }else{
                     biliDao.updateParam(param);
@@ -157,7 +157,7 @@ public class PropertiesUtil {
      * @param file 生成的配置文件对象
      */
     public static void createConfig(File file){
-        List<Param> list=biliDao.selectParams();
+        List<Param> list=biliDao.selectParam(null);
         List<String> stringList=new ArrayList<String>();
         for(Param param:list){
             stringList.add(StringUtil.gbEncoding(param.getDesc()));
@@ -166,7 +166,7 @@ public class PropertiesUtil {
         try {
             FileUtils.writeLines(file,"GBK",stringList);
         } catch (IOException e) {
-            LogUtil.outPutLog(LogUtil.getLineInfo(),e);
+            log.error(e);
         }
     }
 }

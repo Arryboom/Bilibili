@@ -3,15 +3,12 @@ package org.pqh.util;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.pqh.entity.Type;
 import org.apache.log4j.Logger;
-import org.pqh.entity.vstorage.Data;
+
 
 import java.io.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by 10295 on 2016/8/4.
@@ -87,15 +84,15 @@ public class SqlUtil {
             }
             bufferedWriter.write("}");
         } catch (FileNotFoundException e) {
-            LogUtil.outPutLog(LogUtil.getLineInfo(),e);
+            log.error(e);
         } catch (IOException e) {
-            LogUtil.outPutLog(LogUtil.getLineInfo(),e);
+            log.error(e);
         }finally {
             if (bufferedWriter != null) {
                 try {
                     bufferedWriter.close();
                 } catch (IOException e) {
-                    LogUtil.outPutLog(LogUtil.getLineInfo(),e);
+                    log.error(e);
                 }
             }
         }
@@ -124,8 +121,8 @@ public class SqlUtil {
                 typename =Float.class.getName();
             }else if(subNode.isNumber()){
                 typename =Integer.class.getName();
-            }else if(checkDate(subNode.asText())){
-                typename =Data.class.getName();
+            }else if(TimeUtil.checkDate(0,subNode.asText())){
+                typename =Date.class.getName();
             }else if(subNode.isArray()){
                 typename= List.class.getName();
             }else if(subNode.isObject()){
@@ -142,21 +139,5 @@ public class SqlUtil {
         return map;
     }
 
-    /**
-     * 检查日期格式有效性
-     * @param date 日期
-     * @return
-     */
-    private static boolean checkDate(String date){
-        try {
-            new SimpleDateFormat(TimeUtil.DATETIME).parse(date);
-        } catch (ParseException e) {
-            try {
-                new SimpleDateFormat(TimeUtil.DATE).parse(date);
-            } catch (ParseException e1) {
-                return false;
-            }
-        }
-        return true;
-    }
+
 }

@@ -1,28 +1,43 @@
 package org.pqh.entity;
 
+import org.apache.ibatis.annotations.*;
+import org.apache.ibatis.annotations.Param;
+
 /**
  * Created by 10295 on 2016/7/3.
  */
 public class Bangumi {
-    private Integer bangumi_id;
-    private Integer season_id;
+    private Integer seasonId;
+    private Integer bangumiId;
     private String title;
-    private Integer allow_download;
 
-    public Integer getBangumi_id() {
-        return bangumi_id;
+    public Bangumi() {
     }
 
-    public void setBangumi_id(Integer bangumi_id) {
-        this.bangumi_id = bangumi_id;
+    public Bangumi(Integer seasonId, Integer bangumiId, String title) {
+        this.seasonId = seasonId;
+        this.bangumiId = bangumiId;
+        this.title = title;
     }
 
-    public Integer getSeason_id() {
-        return season_id;
+    public Bangumi(Integer seasonId) {
+        this.seasonId = seasonId;
     }
 
-    public void setSeason_id(Integer season_id) {
-        this.season_id = season_id;
+    public Integer getSeasonId() {
+        return seasonId;
+    }
+
+    public void setSeasonId(Integer seasonId) {
+        this.seasonId = seasonId;
+    }
+
+    public Integer getBangumiId() {
+        return bangumiId;
+    }
+
+    public void setBangumiId(Integer bangumiId) {
+        this.bangumiId = bangumiId;
     }
 
     public String getTitle() {
@@ -33,21 +48,12 @@ public class Bangumi {
         this.title = title;
     }
 
-    public Integer getAllow_download() {
-        return allow_download;
-    }
-
-    public void setAllow_download(Integer allow_download) {
-        this.allow_download = allow_download;
-    }
-
-
+    @Override
     public String toString() {
         return "Bangumi{" +
-                "bangumi_id=" + bangumi_id +
-                ", season_id=" + season_id +
+                "seasonId=" + seasonId +
+                ", bangumiId=" + bangumiId +
                 ", title='" + title + '\'' +
-                ", allow_download=" + allow_download +
                 '}';
     }
 }

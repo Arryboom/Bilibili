@@ -6,7 +6,6 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.pqh.entity.BtAcg;
-import org.pqh.entity.statistics.ComparatorAvPlay;
 import org.pqh.task.TaskBtacg;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
@@ -40,7 +39,8 @@ public class FindResourcesUtil {
             } while (!(threadPoolTaskExecutor.getThreadPoolExecutor().getCompletedTaskCount() == TaskBtacg.pages - 1));
         }
         for (String key : map.keySet()) {
-            Collections.sort(map.get(key), new ComparatorAvPlay("size"));
+            map.get(key).sort((BtAcg b1,BtAcg b2)->(Double.parseDouble(b1.getSize())-Double.parseDouble((b2.getSize()))>0?1:-1));
+
         }
         return map;
     }
@@ -55,7 +55,7 @@ public class FindResourcesUtil {
         if(page==1) {
             String message=document.select(".text_bold").text();
             log.info(message);
-            int i=Integer.parseInt(BiliUtil.matchStr(message,"\\d+条",String.class).replaceAll("条",""));
+            int i=Integer.parseInt(StringUtil.matchStr(message,"\\d+条",String.class).replaceAll("条",""));
             TaskBtacg.pages=i/30+(i%30==0?0:1);
         }
         Elements elements = document.select("#listTable>tbody>tr");
@@ -87,7 +87,7 @@ public class FindResourcesUtil {
                             break;
                         }
                     } catch (IllegalAccessException e) {
-                        LogUtil.outPutLog(LogUtil.getLineInfo(),e);
+                        log.error(e);
                     }
                 }
                 if(flag){
@@ -127,7 +127,7 @@ public class FindResourcesUtil {
                         fields[i].set(btAcg, ApiUrl.btAcgIndex.getUrl(td.select("a").attr("href")));
                     }
                 }catch (IllegalAccessException e) {
-                    LogUtil.outPutLog(LogUtil.getLineInfo(),e);
+                    log.error(e);
                 }
                 i++;
             }

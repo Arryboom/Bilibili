@@ -8,20 +8,14 @@ import static org.pqh.util.SpringContextHolder.insertService;
 public class TaskCid implements Runnable {
     private int cid;
 
-    private int type;
 
-    public TaskCid(int cid,int type) {
+
+    public TaskCid(int cid) {
         this.cid = cid;
-        this.type = type;
     }
 
-
     public void run() {
-            if(type==0){
-                insertService.insertVstorage(cid);
-            }else if(type==1){
-                insertService.insertCid(cid);
-            }
+            insertService.insertCid(cid);
     }
 
 }
