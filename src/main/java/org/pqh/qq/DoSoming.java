@@ -1,20 +1,18 @@
 package org.pqh.qq;
 
-import com.scienjus.smartqq.Receiver;
+
 import com.scienjus.smartqq.model.DiscussMessage;
 import com.scienjus.smartqq.model.GroupMessage;
 import com.scienjus.smartqq.model.Message;
 import org.apache.commons.cli.*;
 import org.apache.log4j.Logger;
 import org.pqh.entity.Param;
-import org.pqh.entity.vstorage.Data;
-import org.pqh.service.AvCountService;
-import org.pqh.util.LogUtil;
-import org.pqh.util.SpringContextHolder;
 import org.pqh.util.StringUtil;
-import org.pqh.util.ThreadUtil;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static org.pqh.util.SpringContextHolder.biliDao;
 /**

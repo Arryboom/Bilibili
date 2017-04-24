@@ -146,7 +146,7 @@ public class InsertService{
 						} else {
 							obj = keys.toString();
 						}
-						data = ReflexUtil.setObject(data, key, obj);
+						ReflexUtil.setObject(data, key, obj);
 					}
 					String date=TimeUtil.formatDate(new Timestamp(data.getCtime()*1000),TimeUtil.DATE);
 					try {
@@ -189,7 +189,7 @@ public class InsertService{
 			if(key.equals("aid")&&value.isEmpty()){
 				return;
 			}
-			c= ReflexUtil.setObject(c,key,value);
+			ReflexUtil.setObject(c,key,value);
 		}
 		c.setCid(cid);
 		try {

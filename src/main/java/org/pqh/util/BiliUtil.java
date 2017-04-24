@@ -53,7 +53,7 @@ public class BiliUtil {
 			if(PropertiesUtil.getProperties("excludenode",String.class).contains(element.getName())){
 				continue;
 			}
-			bili=  ReflexUtil.setObject(bili,element.getName(),element.getText());
+			ReflexUtil.setObject(bili,element.getName(),element.getText());
 		}
 		return bili;
 	}
@@ -70,6 +70,7 @@ public class BiliUtil {
 		strings.offer(appkey);
 		strings.offer(aid+"");
 		strings.offer(page+"");
+		//拼接请求参数
 		Map<String,String> map=parseXml(strings,ApiUrl.AID.getUrl());
 		org.dom4j.Document document=null;
 		document = CrawlerUtil.jsoupGet(ApiUrl.AID.getUrl(), org.dom4j.Document.class, Connection.Method.GET,map.get("params_").split(","));

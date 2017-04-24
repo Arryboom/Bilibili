@@ -78,7 +78,7 @@ public class ReflexUtil {
      * @param value
      * @return
      */
-    public static <T>T setObject(Object object,String key,Object value) {
+    public static void setObject(Object object,String key,Object value) {
         Field field=null;
         try {
             field = object.getClass().getDeclaredField(key);
@@ -94,7 +94,6 @@ public class ReflexUtil {
                     }
                 }
                 log.error(e+"\n"+object.getClass()+" "+key+" "+value);
-                return (T)object;
             }
         }
         field.setAccessible(true);
@@ -131,6 +130,5 @@ public class ReflexUtil {
         catch (IllegalAccessException e) {
             log.error(e);
         }
-        return (T)object;
     }
 }

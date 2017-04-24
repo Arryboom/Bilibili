@@ -328,8 +328,8 @@ public class MessagePush {
                     Date now = TimeUtil.parseDate(lastUpdate[3] + " " + lastUpdate[4], format);
                     if(result.getTime()<now.getTime()){
                         String num = a.parent().attr("id").replaceAll("\\D", "");
-                        msg="天使论坛已经更新该番剧"+tsdm.getAnimeName()+"资源，传送门："+tsdm.getTsdmUrl()+"#"+num;
-                        log.info(msg);
+                        String m="天使论坛已经更新该番剧"+tsdm.getAnimeName()+"资源，传送门："+tsdm.getTsdmUrl()+"#"+num;
+                        log.info(m);
 //                        DoSoming.messagePush(msg);
                     }else{
                         continue;
@@ -442,7 +442,7 @@ public class MessagePush {
 
                     try {
                         bduDao.insertBdu(bdu);
-                        DoSoming.messagePush(tsdm.getAnimeName() + "资源已更新：" + msg);
+                        DoSoming.messagePush(tsdm.getAnimeName() + "资源已更新：" + bdu);
                     } catch (DuplicateKeyException e) {
                         bduDao.updateBdu(bdu);
                     }

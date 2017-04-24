@@ -1,10 +1,10 @@
 package org.pqh.test;
 
-import com.scienjus.smartqq.Receiver;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
 import org.pqh.entity.Save;
 import org.pqh.qq.DoSoming;
+import org.pqh.qq.Receiver;
 import org.pqh.service.InsertService;
 import org.pqh.task.Listener;
 import org.pqh.task.TaskBili;
@@ -71,7 +71,8 @@ public class Test {
 
         //启动qq机器人
         ThreadUtil.excute(()-> {
-            for(long id:Receiver.groupFromID.keySet()){
+            Receiver.main(null);
+            for(long id: Receiver.groupFromID.keySet()){
                 DoSoming.groupFromID.put(Receiver.groupFromID.get(id).getName(),id);
             }
         });

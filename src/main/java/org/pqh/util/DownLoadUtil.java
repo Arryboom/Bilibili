@@ -46,15 +46,6 @@ public class DownLoadUtil {
         try {
             closeableHttpResponse=CrawlerUtil.doGet(href);
             httpEntity=closeableHttpResponse.getEntity();
-//            Class c=httpEntity.getClass().getSuperclass();
-//            Field field=c.getDeclaredField("wrappedEntity");
-//            field.setAccessible(true);
-//            String values=field.get(httpEntity).toString();
-//            values=values.substring(values.indexOf("[")+1,values.indexOf("]"));
-//            Map<String,String> map=new HashMap<String, String>();
-//            for(String value:values.split(",")){
-//                map.put(value.split(":")[0],value.split(":")[1].trim());
-//            }
             file=new File(outputPath);
             if(file.exists()){
                 file.delete();
