@@ -36,7 +36,7 @@ Windows 10</br>
 第二步：用<a href="https://github.com/luffy9412/Bilibili/blob/master/doc/bilibili.sql">数据库表创建脚本</a>创建数据库以及表,初始化配置参数</br>
 其中要手动往sql脚本文件添加access_token参数或者DedeUserID、DedeUserID__ckMd5、SESSDATA这三个参数</br>
 二选一，否则bilibili接口请求失败</br>
-其中access_token是手机bilibili客户端用到的参数，需要通过捉手机安卓包才可以找到，不是这里三言两语可以说清楚的。</br>
+其中access_token是手机bilibili客户端用到的参数，需要通过捉手机客户端包才可以找到，不是这里三言两语可以说清楚的。</br>
 而设置cookie就简单得多。如下图打开chrome浏览器(其他浏览器差不多)，开发者工具，找到查看cookie的地方，把红框里的三个值添加到数据库的param表里面</br>
 ![image](src/main/webapp/image/initCookie.png)</br>
 如无意外创建完毕表结构应该跟下图一样。
