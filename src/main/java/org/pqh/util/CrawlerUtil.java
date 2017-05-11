@@ -2,7 +2,6 @@ package org.pqh.util;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpEntity;
 import org.apache.http.NameValuePair;
@@ -20,7 +19,6 @@ import org.dom4j.io.SAXReader;
 import org.jsoup.Connection;
 import org.jsoup.HttpStatusException;
 import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
 
 import java.io.File;
 import java.io.IOException;
@@ -43,8 +41,6 @@ public class CrawlerUtil {
     private static String userAgent=PropertiesUtil.getProperties("User-Agent",String.class);
     //连接超时时间
     private static int timeout=PropertiesUtil.getProperties("timeout",Integer.class);;
-    //发送的表单数据
-    public static Map<String,String> formMap=new HashMap<String, String>();
 
     /**
      * httpclient get请求封装
@@ -100,16 +96,23 @@ public class CrawlerUtil {
 
     }
 
+    public enum DataType{
+        xml,
+        domcument,
+        json,
+        string
+    }
+
     /**
      *
-     * @param url 爬虫的网址
-     * @param tClass 返回的对象类型
+     * @param url 请求地址
+     * @param dataType 预期返回的数据类型
      * @param method 请求方式
-     * @param <T> 返回的对象类型
+     * @param cookies 请求cookie
      * @param params 请求参数
      * @return  返回文档信息
      */
-    public static <T>T jsoupGet(String url, Class<T> tClass, Connection.Method method,String ...params){
+    public static <T>T jsoupGet(String url, DataType dataType, Connection.Method method,Map<String,String> cookies,Map<String,String> params){
         Connection connection=null;
         ObjectMapper objectMapper=new ObjectMapper();
         objectMapper.configure(JsonParser.Feature.ALLOW_UNQUOTED_CONTROL_CHARS,true);
@@ -118,15 +121,22 @@ public class CrawlerUtil {
         int i=0;
         String json=null;
         try {
-            if(tClass== org.dom4j.Document.class){
+            if(DataType.xml.equals(dataType)){
                 SAXReader saxReader=new SAXReader();
                 return (T) saxReader.read(url);
             }
-//            String param[]=url.contains("?")?url.substring(url.indexOf("?")+1).split("="):null;
-            connection = Jsoup.connect(url).header("Cookie",cookie).userAgent(userAgent).timeout(timeout*1000).data(params).ignoreContentType(true);
-
-
-            if(tClass==Document.class){
+            connection = Jsoup.connect(url);
+            if(BiliUtil.access_key.isEmpty()&&BiliUtil.bili_cookie.size()==3&&url.contains("bilibili")){
+                connection.cookies(BiliUtil.bili_cookie);
+            }
+            if(cookies!=null){
+                connection.cookies(cookies);
+            }
+            if(params!=null){
+                connection.data(params);
+            }
+            connection.userAgent(userAgent).timeout(timeout*1000).ignoreContentType(true);
+            if(DataType.domcument.equals(dataType)){
                 if (method.equals(Connection.Method.GET)) {
                     return (T) connection.get();
                 } else if (method.equals(Connection.Method.POST)) {
@@ -135,13 +145,13 @@ public class CrawlerUtil {
                     throw new RuntimeException("不支持" + method + "请求");
                 }
             }
-            else if(tClass==String.class){
+            else if(DataType.string.equals(dataType)){
                 return (T) connection.execute().body();
-            }else if(tClass==JsonNode.class){
+            }else if(DataType.json.equals(dataType)){
                 json=method.equals(Connection.Method.GET)?connection.get().body().text():connection.post().body().text();
                 return (T) objectMapper.readTree(json);
-            }else {
-                throw new RuntimeException("返回值不支持"+tClass.getName()+"这种类型");
+            }else{
+                return null;
             }
         }
         catch(JsonParseException e){
@@ -168,7 +178,7 @@ public class CrawlerUtil {
             if(e.getStatusCode()==404){
                 return null;
             }else{
-                return jsoupGet(url,tClass,method);
+                return jsoupGet(url,dataType,method);
             }
         }
         catch (IOException e) {
@@ -178,7 +188,7 @@ public class CrawlerUtil {
                 ThreadUtil.sleep(30);
             }
             ThreadUtil.sleep(5);
-            return jsoupGet(url,tClass,method);
+            return jsoupGet(url,dataType,method);
         } catch (DocumentException e) {
             log.error("解析xml文档出错，异常信息"+e.getMessage());
             if(e.getMessage().contains("在文档的元素内容中找到无效的 XML 字符")||e.getMessage().contains("前言中不允许有内容")||e.getMessage().contains("HTTP response code: 502")) {
@@ -188,24 +198,42 @@ public class CrawlerUtil {
                 log.error("无法连接到百度，应该是断网了，30秒后重新尝试连接");
                 ThreadUtil.sleep(30);
             }
-            return jsoupGet(url, tClass, method);
+            return jsoupGet(url, dataType, method);
         }
 
     }
 
     /**
-     * 传入需要连接的IP，返回是否连接成功
+     * 带参数请求
+     */
+    public static <T>T jsoupGet(String url, DataType dataType, Connection.Method method,String ...parmas ){
+
+        Map<String,String> paramMap=new HashMap<>();
+        for(int i=0;i<parmas.length/2;i++){
+            paramMap.put(parmas[2*i],parmas[2*i+1]);
+        }
+        return jsoupGet(url,dataType,method,null,paramMap);
+    }
+
+
+    /**
+     * 普通请求
+     */
+    public static <T>T jsoupGet(String url, DataType dataType, Connection.Method method){
+        return jsoupGet(url,dataType,method,null,null);
+    }
+
+    /**
+     * 传入需要连接的IP/域名
      * @param remoteInetAddr
-     * @return
+     * @return 返回IP
      */
     public static String isReachable(String remoteInetAddr) {
-        String ip=null;
         try {
-            ip=InetAddress.getByName(remoteInetAddr).getHostAddress();
+            return InetAddress.getByName(remoteInetAddr).getHostAddress();
         } catch (UnknownHostException e) {
             return null;
         }
-        return ip;
     }
 
 }

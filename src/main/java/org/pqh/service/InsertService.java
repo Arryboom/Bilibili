@@ -103,10 +103,20 @@ public class InsertService{
 
 	public void insertHistory() {
 		Save save=biliDao.selectSave(4).get(0);
-		for (int aid = Integer.parseInt(save.getBilibili());!stop ;) {
+		int lastAid=0;
+		for (int aid = BiliUtil.getSave(4); !stop ;) {
 			int count=aid;
 			do {
-				JsonNode n=CrawlerUtil.jsoupGet(ApiUrl.biliHistory.s(2).getUrl("add"), JsonNode.class, Connection.Method.POST, "access_key", BiliUtil.access_token, "aid", String.valueOf(aid), "jsonp", "jsonp");
+				JsonNode n=null;
+				do{
+					if(n!=null){
+						ThreadUtil.sleep(n.toString(),30);
+					}
+					n=CrawlerUtil.jsoupGet(ApiUrl.biliHistory.s(2).getUrl("report"), CrawlerUtil.DataType.json, Connection.Method.POST,"access_key", BiliUtil.access_key, "aid",String.valueOf(aid));
+					BiliUtil.access_key= biliDao.selectParam("access_key").get(0).getValue();
+					BiliUtil.refreshCookie();
+				}
+				while(n.get("code").asInt()!=0);
 				if(n.get("code").asInt()==-500){
 					try {
 						Thread.sleep(60);
@@ -116,9 +126,16 @@ public class InsertService{
 				}
 				aid++;
 			}while (aid-count<=100);
-			JsonNode jsonNode = CrawlerUtil.jsoupGet(ApiUrl.biliHistory.s(1).getUrl(BiliUtil.access_token, 1, 100), JsonNode.class, Connection.Method.GET);
+			JsonNode jsonNode = CrawlerUtil.jsoupGet(ApiUrl.biliHistory.s(1).getUrl(BiliUtil.access_key, 1, 100), CrawlerUtil.DataType.json, Connection.Method.GET);
+			CrawlerUtil.jsoupGet(ApiUrl.biliHistory.s(2).getUrl("clear"), CrawlerUtil.DataType.json, Connection.Method.POST,"access_key");
+
 			if(jsonNode.get("data")==null||jsonNode.get("data").size()==0){
-				if(jsonNode.get("code").asInt()==-500){
+				if(aid-lastAid>1000){
+					save.setLatest(true);
+					biliDao.updateSave(save);
+					aid-=1500;
+				}
+				else if(jsonNode.get("code").asInt()==-500){
 					ThreadUtil.sleep(60);
 				}
 				continue;
@@ -131,7 +148,7 @@ public class InsertService{
 					while (iterator.hasNext()) {
 						Object obj  ;
 						String key = iterator.next();
-						if ("type,device,progress".contains(key)) {
+						if ("type,device,progress,page,bangumi".contains(key)) {
 							continue;
 						}
 						JsonNode keys = node.get(key);
@@ -148,16 +165,23 @@ public class InsertService{
 						}
 						ReflexUtil.setObject(data, key, obj);
 					}
-					String date=TimeUtil.formatDate(new Timestamp(data.getCtime()*1000),TimeUtil.DATE);
+					Timestamp timestamp=new Timestamp(data.getCtime()*1000);
+					String date=TimeUtil.formatDate(timestamp,TimeUtil.DATE);
+					String dataTime=TimeUtil.formatDate(timestamp,TimeUtil.DATETIME);
+					log.debug("dataTime="+dataTime);
 					try {
-
+						biliHistoryDao.insertHistory(data);
 						List<AvCount> avCounts= biliDao.selectAvCount(date,null);
 						if(avCounts.size()==0){
 							biliDao.insertAvCount(date);
 						}else {
 							biliDao.updateAvCount(date);
 						}
-						biliHistoryDao.insertHistory(data);
+
+						lastAid=aid;
+						save.setBilibili((aid)+"");
+						save.setLastUpdateTime(new Timestamp(System.currentTimeMillis()));
+						biliDao.updateSave(save);
 					}catch (DuplicateKeyException e){
 						biliHistoryDao.updateHistory(data);
 					}
@@ -165,10 +189,7 @@ public class InsertService{
 				}
 
 			}
-			CrawlerUtil.jsoupGet(ApiUrl.biliHistory.s(2).getUrl("clear"), JsonNode.class, Connection.Method.POST, "access_key", BiliUtil.access_token, "jsonp", "jsonp");
-			save.setBilibili((aid)+"");
-			save.setLastUpdateTime(new Timestamp(System.currentTimeMillis()));
-			biliDao.updateSave(save);
+
 		}
 	}
 
@@ -176,7 +197,7 @@ public class InsertService{
 		String url = ApiUrl.CID.getUrl(cid);
 		Cid c=new Cid();
 		Field fields[]=c.getClass().getDeclaredFields();
-		Document document = CrawlerUtil.jsoupGet(url, Document.class, Connection.Method.GET);
+		Document document = CrawlerUtil.jsoupGet(url, CrawlerUtil.DataType.domcument, Connection.Method.GET);
 		if(document==null){
 			Save save=biliDao.selectSave(2).get(0);
 			biliDao.updateSave(save);

@@ -207,6 +207,33 @@
             <version>1.2</version>
         </dependency>
 
+        <!--<dependency>-->
+            <!--<groupId>org.seleniumhq.selenium</groupId>-->
+            <!--<artifactId>selenium-java</artifactId>-->
+            <!--<version>3.4.0</version>-->
+            <!--<exclusions>-->
+                <!--<exclusion>-->
+                    <!--<groupId>log4j</groupId>-->
+                    <!--<artifactId>log4j</artifactId>-->
+                <!--</exclusion>-->
+                <!--<exclusion>-->
+                    <!--<groupId>commons-io</groupId>-->
+                    <!--<artifactId>commons-io</artifactId>-->
+                <!--</exclusion>-->
+                <!--<exclusion>-->
+                    <!--<groupId>org.apache.commons</groupId>-->
+                    <!--<artifactId>commons-lang3</artifactId>-->
+                <!--</exclusion>-->
+                <!--<exclusion>-->
+                    <!--<groupId>commons-logging</groupId>-->
+                    <!--<artifactId>commons-logging</artifactId>-->
+                <!--</exclusion>-->
+                <!--<exclusion>-->
+                    <!--<groupId>commons-codec</groupId>-->
+                    <!--<artifactId>commons-codec</artifactId>-->
+                <!--</exclusion>-->
+            <!--</exclusions>-->
+        <!--</dependency>-->
     </dependencies>
 
     <build>
@@ -241,12 +268,6 @@
                 <version>3.0.0</version>
                 <configuration>
                     <archive>
-                        <!-- 清单文件 -->
-                        <!--<manifest>-->
-                        <!--<mainClass>org.pqh.test.Test</mainClass>-->
-                        <!--<addClasspath>true</addClasspath>-->
-                        <!--<classpathPrefix>lib/</classpathPrefix>-->
-                        <!--</manifest>-->
                         <!-- 给清单文件添加键值对(配置文件外置) -->
                         <manifestEntries>
                             <Class-Path>config/</Class-Path>
@@ -255,27 +276,6 @@
 
                 </configuration>
             </plugin>
-
-            <!-- 拷贝依赖的jar包到lib目录 -->
-            <!--<plugin>-->
-            <!--<groupId>org.apache.maven.plugins</groupId>-->
-            <!--<artifactId>maven-dependency-plugin</artifactId>-->
-            <!--<version>3.0.0</version>-->
-            <!--<executions>-->
-            <!--<execution>-->
-            <!--<id>copy</id>-->
-            <!--<phase>package</phase>-->
-            <!--<goals>-->
-            <!--<goal>copy-dependencies</goal>-->
-            <!--</goals>-->
-            <!--<configuration>-->
-            <!--<outputDirectory>-->
-            <!--${project.build.directory}/lib-->
-            <!--</outputDirectory>-->
-            <!--</configuration>-->
-            <!--</execution>-->
-            <!--</executions>-->
-            <!--</plugin>-->
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -317,15 +317,6 @@
                 </executions>
             </plugin>
 
-            <!--<plugin>-->
-            <!--<groupId>org.apache.tomcat.maven</groupId>-->
-            <!--<artifactId>tomcat7-maven-plugin</artifactId>-->
-            <!--<version>2.2</version>-->
-            <!--<configuration>-->
-            <!--<url>http://localhost:8081</url>-->
-            <!--<server>tomcat</server>-->
-            <!--</configuration>-->
-            <!--</plugin>-->
         </plugins>
     </build>
 

@@ -10,7 +10,6 @@ import org.pqh.task.Listener;
 import org.pqh.task.TaskBili;
 import org.pqh.util.*;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.PropertySource;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -18,6 +17,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Date;
+import java.util.Scanner;
 
 import static org.pqh.util.SpringContextHolder.biliDao;
 
@@ -26,7 +26,6 @@ import static org.pqh.util.SpringContextHolder.biliDao;
  */
 
 @Component
-@PropertySource("classpath:config.properties")
 public class Test {
     private static Logger log= Logger.getLogger(Test.class);
 
@@ -56,6 +55,16 @@ public class Test {
 
     }
 
+    public void startQQ(){
+        //启动qq机器人
+        ThreadUtil.excute(()-> {
+            Receiver.main(null);
+            for(long id: Receiver.groupFromID.keySet()){
+                DoSoming.groupFromID.put(Receiver.groupFromID.get(id).getName(),id);
+            }
+        });
+    }
+
     public  void testTask(){
         //爬取历史接口数据
         Listener listener=new Listener();
@@ -69,15 +78,26 @@ public class Test {
         },"insertCid");
         ThreadUtil.excute(insertCid);
 
-        //启动qq机器人
-        ThreadUtil.excute(()-> {
-            Receiver.main(null);
-            for(long id: Receiver.groupFromID.keySet()){
-                DoSoming.groupFromID.put(Receiver.groupFromID.get(id).getName(),id);
+//        startQQ();
+
+        ThreadUtil.excute(()->{
+            while (true){
+                Scanner scanner=new Scanner(System.in);
+                try {
+                    String command=scanner.nextLine();
+                    log.info("输入命令："+command);
+                    switch (command){
+                        case "startQQ":Receiver.client.close();startQQ();
+                    }
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+
             }
+
         });
-
-
 
         //定时检测爬虫运行状态，不正常自动重启线程读取记录表记录继续爬取。
         String s=null;

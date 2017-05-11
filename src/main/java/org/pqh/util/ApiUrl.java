@@ -26,11 +26,9 @@ public enum ApiUrl {
     //根据关键字搜索专题
     bangumiSearch("http://search.bilibili.com/bangumi?keyword={0}"),
     //番剧专题接口
-    bangumiAnime("http://bangumi.bilibili.com/jsonp/seasoninfo/{0}.ver"),
+    bangumiAnime("http://bangumi.bilibili.com/jsonp/seasoninfo/{0}.ver","http://bangumi.bilibili.com/anime/{0}"),
     //episode_id转换av_id接口
     episodeIdToAid("http://bangumi.bilibili.com/web_api/episode/get_source?episode_id="),
-    //番剧详细信息接口
-    seasonInfo("http://bangumi.bilibili.com/jsonp/seasoninfo/"),
     //百度百科
     baikeIndex("http://baike.baidu.com{0}"),
     //BtAcg动画种子资源搜索接口
@@ -111,8 +109,8 @@ public enum ApiUrl {
 
     public String getUrl(){
         switch (this.index){
-            case 1:return this.url;
             case 2:return this.url1;
+            case 1:
             default:return this.url;
         }
     }

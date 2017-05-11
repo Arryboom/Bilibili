@@ -22,7 +22,7 @@ public class SpringContextHolder{
     public static InsertService insertService;
     public static ThreadPoolTaskExecutor threadPoolTaskExecutor;
     public static AvCountService avCountService;
-    public static AbstractApplicationContext applicationContext;
+    private static AbstractApplicationContext applicationContext;
     public static BduDao bduDao;
     public static VstorageDao vstorageDao;
     public static BiliHistoryDao biliHistoryDao;
@@ -40,6 +40,7 @@ public class SpringContextHolder{
     public static void close(){
         applicationContext.registerShutdownHook();
     }
+
 
 
     /**

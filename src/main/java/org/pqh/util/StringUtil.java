@@ -133,7 +133,7 @@ public class StringUtil {
             return sb.substring(sb.indexOf(strs[0]),sb.lastIndexOf(strs[1]));
         }else if(flag[5]&&flag[7]){
             return sb.substring(sb.indexOf(strs[2]),sb.lastIndexOf(strs[3]));
-        }else if(flag[8]&&flag[10]&&sb.endsWith(";")){
+        }else if(flag[8]&&flag[10]){
             return sb.substring(sb.indexOf(strs[4])+1,sb.lastIndexOf(strs[5]));
         }else{
             return fuckJson().toString();

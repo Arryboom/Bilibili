@@ -42,11 +42,11 @@ public class DownLoadUtil {
         OutputStream outputStream = null;
         HttpEntity httpEntity=null;
         CloseableHttpResponse closeableHttpResponse=null;
-        File file=null;
-        try {
+      try {
             closeableHttpResponse=CrawlerUtil.doGet(href);
             httpEntity=closeableHttpResponse.getEntity();
-            file=new File(outputPath);
+            File file=new File(outputPath);
+            FileUtils.forceMkdirParent(file);
             if(file.exists()){
                 file.delete();
             }else if(file.createNewFile()){
@@ -167,7 +167,7 @@ public class DownLoadUtil {
     }
 
     public static void pptvDanmu(String url,String filePath){
-        Document document=CrawlerUtil.jsoupGet(url,Document.class, Connection.Method.GET);
+        Document document=CrawlerUtil.jsoupGet(url,CrawlerUtil.DataType.domcument, Connection.Method.GET);
         String webcfg=document.html().substring(document.html().indexOf("webcfg")+9);
         JsonNode cfg=null;
         List<String> xml=new ArrayList<>();
@@ -178,7 +178,8 @@ public class DownLoadUtil {
 
             do {
                 //弹幕接口
-                JsonNode jsonNode = CrawlerUtil.jsoupGet(ApiUrl.pptvDanMu.getUrl(cfg.get("id").asText(),pos), JsonNode.class, Connection.Method.GET).get("data").get("infos");
+                JsonNode jsonNode = CrawlerUtil.jsoupGet(ApiUrl.pptvDanMu.getUrl(cfg.get("id").asText(),pos), CrawlerUtil.DataType.json, Connection.Method.GET);
+                jsonNode = jsonNode.get("data").get("infos");
                 pos+=1000;
                 if(jsonNode.size()==1&&jsonNode.get(0).get("id").asInt()==0){
                     break;
@@ -207,7 +208,7 @@ public class DownLoadUtil {
 
 
     public static void sohuDanmu(String url, String filePath){
-        Document document=CrawlerUtil.jsoupGet(url,Document.class, Connection.Method.GET);
+        Document document=CrawlerUtil.jsoupGet(url,CrawlerUtil.DataType.domcument, Connection.Method.GET);
 
         String vid=document.select("meta[property=og:video]").attr("content").replaceAll("\\D","");
 
@@ -283,7 +284,7 @@ public class DownLoadUtil {
         mapper.configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true);
         do {
 
-            Document document = CrawlerUtil.jsoupGet(href, Document.class, Connection.Method.GET);
+            Document document = CrawlerUtil.jsoupGet(href, CrawlerUtil.DataType.domcument, Connection.Method.GET);
             elements=document.select("div.items>li.item");
             String title=elements.get(index).attr("title");
             href=ApiUrl.youkuPlay.getUrl(elements.get(index++).attr("id").replace("item_",""));
@@ -322,7 +323,7 @@ public class DownLoadUtil {
             strings.offer(begin+"");
             begin++;
             String params[]= BiliUtil.parseXml(strings,ApiUrl.youkuDanMu.getUrl()).get("params_").split(",");
-            JsonNode jsonNode = CrawlerUtil.jsoupGet(ApiUrl.youkuDanMu.getUrl(), JsonNode.class, Connection.Method.POST,params);
+            JsonNode jsonNode = CrawlerUtil.jsoupGet(ApiUrl.youkuDanMu.getUrl(), CrawlerUtil.DataType.json, Connection.Method.POST,params);
             if(jsonNode==null){
                 break;
             }
@@ -500,16 +501,13 @@ public class DownLoadUtil {
      * @param path 生成路径
      */
     public static void dLWordArt(String text,String path){
-        CrawlerUtil.cookie=PropertiesUtil.getProperties("assqqlcookie",String.class);
+
         Document document= null;
         try {
-            document = CrawlerUtil.jsoupGet(ApiUrl.wordArt.getUrl(URLEncoder.encode(text, "GBK")), Document.class, Connection.Method.GET);
+            document = CrawlerUtil.jsoupGet(ApiUrl.wordArt.getUrl(URLEncoder.encode(text, "GBK")), CrawlerUtil.DataType.domcument, Connection.Method.GET);
             if(!document.body().html().contains(".jpg")) {
-                log.info("assqqlcookie:" + CrawlerUtil.cookie + "已过期");
-                CrawlerUtil.cookie = CrawlerUtil.doGet(ApiUrl.assqql.getUrl()).getHeaders("Set-Cookie")[0].getValue();
-                PropertiesUtil.updateProperties("assqqlcookie", CrawlerUtil.cookie, null);
-                log.info("assqqlcookie:" + CrawlerUtil.cookie + "更新完毕尝试重新发送请求");
-                document = CrawlerUtil.jsoupGet(ApiUrl.wordArt.getUrl(URLEncoder.encode(text, "GBK")) , Document.class, Connection.Method.GET);
+                String cookie = CrawlerUtil.doGet(ApiUrl.assqql.getUrl()).getHeaders("Set-Cookie")[0].getValue();
+                document = CrawlerUtil.jsoupGet(ApiUrl.wordArt.getUrl(URLEncoder.encode(text, "GBK")) , CrawlerUtil.DataType.domcument, Connection.Method.GET);
             }
         } catch (UnsupportedEncodingException e) {
             dLWordArt(text,path);

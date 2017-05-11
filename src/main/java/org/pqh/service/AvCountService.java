@@ -57,7 +57,7 @@ public class AvCountService {
         List<AvPlay> avPlays=new ArrayList<>();
         ObjectMapper objectMapper=new ObjectMapper();
         try {
-            JsonNode jsonNode=CrawlerUtil.jsoupGet(ApiUrl.bangumi.getUrl("154"),JsonNode.class, Connection.Method.GET);
+            JsonNode jsonNode=CrawlerUtil.jsoupGet(ApiUrl.bangumi.getUrl("154"),CrawlerUtil.DataType.json, Connection.Method.GET);
             if(jsonNode==null){
                 log.info("无法解析番剧接口信息");
                 return;
@@ -67,7 +67,7 @@ public class AvCountService {
                 jsonNode=arrayNode.get(i);
                 String bgmid=jsonNode.get("season_id").asText();
                 String title=jsonNode.get("title").asText();
-                Document document= CrawlerUtil.jsoupGet(ApiUrl.bangumiAnime.getUrl(bgmid),Document.class,Connection.Method.GET);
+                Document document= CrawlerUtil.jsoupGet(ApiUrl.bangumiAnime.getUrl(bgmid),CrawlerUtil.DataType.domcument,Connection.Method.GET);
                 String jsonStr=document.body().html();
                 jsonStr=jsonStr.substring(jsonStr.indexOf("{"),jsonStr.lastIndexOf("}")+1);
                 try {

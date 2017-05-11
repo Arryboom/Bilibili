@@ -34,6 +34,9 @@
     <update id="updateTsdm" parameterType="org.pqh.entity.Tsdm">
         UPDATE tsdm
         <set>
+            <if test="updateTime!=null">
+                updateTime=#{updateTime},
+            </if>
             <if test="lastUpdateTimes!=null and index!=null">
                 lastUpdateTimes=JSON_SET(lastUpdateTimes,concat('$."','${index}"'),#{lastUpdateTimes}),
             </if>

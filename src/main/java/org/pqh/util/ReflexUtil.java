@@ -94,6 +94,7 @@ public class ReflexUtil {
                     }
                 }
                 log.error(e+"\n"+object.getClass()+" "+key+" "+value);
+                return;
             }
         }
         field.setAccessible(true);

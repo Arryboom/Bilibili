@@ -51,7 +51,7 @@ public class FindResourcesUtil {
      * @param page 页数
      */
     public static void eachPage(String keyword,int page){
-        Document document = CrawlerUtil.jsoupGet(ApiUrl.btAcgSearch.getUrl(keyword,page), Document.class, Connection.Method.GET);
+        Document document = CrawlerUtil.jsoupGet(ApiUrl.btAcgSearch.getUrl(keyword,page), CrawlerUtil.DataType.domcument, Connection.Method.GET);
         if(page==1) {
             String message=document.select(".text_bold").text();
             log.info(message);

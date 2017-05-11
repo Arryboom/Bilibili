@@ -15,10 +15,8 @@ import org.pqh.entity.Bangumi;
 import org.pqh.entity.Bdu;
 import org.pqh.entity.Param;
 import org.pqh.entity.Tsdm;
-import org.pqh.util.ApiUrl;
-import org.pqh.util.CrawlerUtil;
-import org.pqh.util.StringUtil;
-import org.pqh.util.TimeUtil;
+import org.pqh.task.DynamicTimer;
+import org.pqh.util.*;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -34,7 +32,7 @@ import static org.pqh.util.SpringContextHolder.biliDao;
  * Created by reborn on 2017/3/29.
  */
 @Component
-public class MessagePush {
+public class MessagePush{
     private static Logger log = Logger.getLogger(MessagePush.class);
 
 
@@ -64,7 +62,7 @@ public class MessagePush {
         Document document = null;
         int count = 0;
         while (document == null && count < 3) {
-            document = CrawlerUtil.jsoupGet(ApiUrl.acgdoge.getUrl(), Document.class, Connection.Method.GET);
+            document = CrawlerUtil.jsoupGet(ApiUrl.acgdoge.getUrl(), CrawlerUtil.DataType.domcument, Connection.Method.GET);
             count++;
         }
 
@@ -104,7 +102,7 @@ public class MessagePush {
         Document document = null;
         int count = 0;
         while (document == null && count < 3) {
-            document = CrawlerUtil.jsoupGet(ApiUrl.ithome.getUrl(), Document.class, Connection.Method.GET);
+            document = CrawlerUtil.jsoupGet(ApiUrl.ithome.getUrl(), CrawlerUtil.DataType.domcument, Connection.Method.GET);
             count++;
         }
 
@@ -136,7 +134,7 @@ public class MessagePush {
         Tsdm tsdm=new Tsdm();
         tsdm.setCopyright("优酷");
         List<Tsdm> tsdms=bduDao.selectTsdm(tsdm);
-        Document document = CrawlerUtil.jsoupGet(ApiUrl.youkuBangumi.getUrl(), Document.class, Connection.Method.GET);
+        Document document = CrawlerUtil.jsoupGet(ApiUrl.youkuBangumi.getUrl(), CrawlerUtil.DataType.domcument, Connection.Method.GET);
         for(Tsdm t:tsdms) {
             Elements as=null;
             String name=t.getAnimeName();
@@ -152,7 +150,7 @@ public class MessagePush {
                 }
             }while (true);
             String link=as.select("a").attr("href");
-            Document document1=CrawlerUtil.jsoupGet(link,Document.class, Connection.Method.GET);
+            Document document1=CrawlerUtil.jsoupGet(link,CrawlerUtil.DataType.domcument, Connection.Method.GET);
             link=document1.select(".p-thumb>a").attr("href");
             String youku_id=link.substring(link.lastIndexOf("_")+1,link.indexOf("=="));
             t.setYoukuId(youku_id);
@@ -165,7 +163,7 @@ public class MessagePush {
             log.info(tsdm.getAnimeName()+"\tyoukuId没有入库无法获取番剧更新信息");
             return;
         }
-        JsonNode jsonNode=CrawlerUtil.jsoupGet(ApiUrl.youku.getUrl(tsdm.getYoukuId()),JsonNode.class, Connection.Method.GET);
+        JsonNode jsonNode=CrawlerUtil.jsoupGet(ApiUrl.youku.getUrl(tsdm.getYoukuId()),CrawlerUtil.DataType.json, Connection.Method.GET);
         jsonNode=jsonNode.get("data").get("videos").get("list");
         jsonNode=jsonNode.get(jsonNode.size()-1);
         String title=jsonNode.get("title").asText();
@@ -200,6 +198,9 @@ public class MessagePush {
                 }
             }while (true);
             t.setBiliId(bangumis.get(0).getSeasonId()+"");
+            Document document=CrawlerUtil.jsoupGet(ApiUrl.bangumiAnime.s(2).getUrl(t.getBiliId()),CrawlerUtil.DataType.domcument, Connection.Method.GET);
+            String time=document.select(".info-update>em>span").last().text();
+            t.setUpdateTime(time);
             bduDao.updateTsdm(t);
         }
     }
@@ -209,7 +210,10 @@ public class MessagePush {
             log.info(tsdm.getAnimeName()+"\tbiliId没有入库无法获取番剧更新信息");
             return;
         }
-        JsonNode jsonNode = CrawlerUtil.jsoupGet(ApiUrl.bangumiAnime.getUrl(tsdm.getBiliId()), JsonNode.class, Connection.Method.GET);
+        JsonNode jsonNode = CrawlerUtil.jsoupGet(ApiUrl.bangumiAnime.getUrl(tsdm.getBiliId()), CrawlerUtil.DataType.json, Connection.Method.GET);
+        if(jsonNode==null||jsonNode.get("result")==null){
+            log.error(tsdm.getAnimeName()+"无法获取专题信息");
+        }
         jsonNode = jsonNode.get("result").get("episodes");
         if (jsonNode.size() > 0) {
             jsonNode = jsonNode.get(0);
@@ -234,7 +238,7 @@ public class MessagePush {
         Tsdm tsdm=new Tsdm();
         tsdm.setCopyright("爱奇艺");
         List<Tsdm> tsdms=bduDao.selectTsdm(tsdm);
-        Document document=CrawlerUtil.jsoupGet(ApiUrl.iqiyiBangumi.getUrl(),Document.class, Connection.Method.GET);
+        Document document=CrawlerUtil.jsoupGet(ApiUrl.iqiyiBangumi.getUrl(),CrawlerUtil.DataType.domcument, Connection.Method.GET);
         Elements elements=document.select("#widget-tab-0 > div.o-hidden .site-piclist_info_title>a");
         for(Tsdm t:tsdms){
             List<Bangumi> bangumis;
@@ -252,7 +256,7 @@ public class MessagePush {
                 }
 
             }while (true);
-            document=CrawlerUtil.jsoupGet(as.attr("href"),Document.class,Connection.Method.GET);
+            document=CrawlerUtil.jsoupGet(as.attr("href"),CrawlerUtil.DataType.domcument,Connection.Method.GET);
             String href=document.select("a.c999").last().attr("href");
             String iqiyiID=href.substring(href.lastIndexOf("_")+1,href.lastIndexOf("."));
             t.setIqiyiId(iqiyiID);
@@ -265,7 +269,7 @@ public class MessagePush {
             log.info(tsdm.getAnimeName()+"\tiqiyiID没有入库无法获取番剧更新信息");
             return;
         }
-        Document document=CrawlerUtil.jsoupGet(ApiUrl.iqiyiPlay.getUrl(tsdm.getIqiyiId()),Document.class, Connection.Method.GET);
+        Document document=CrawlerUtil.jsoupGet(ApiUrl.iqiyiPlay.getUrl(tsdm.getIqiyiId()),CrawlerUtil.DataType.domcument, Connection.Method.GET);
         Element as=document.select(".wrapper-piclist li:not(:contains(预告)) a").last();
         String href=as.attr("href");
         String title=as.text();
@@ -295,7 +299,7 @@ public class MessagePush {
 //            }
             log.info(tsdm);
             String url = tsdm.getTsdmUrl();
-            Document postmessage = CrawlerUtil.jsoupGet(url, Document.class, Connection.Method.GET);
+            Document postmessage = CrawlerUtil.jsoupGet(url, CrawlerUtil.DataType.domcument, Connection.Method.GET);
             //
             Elements pstatus = postmessage.select(".pstatus");
 
@@ -318,7 +322,6 @@ public class MessagePush {
                 String lastUpdate[] = a.text().split(" ");
                 log.debug(Arrays.asList(lastUpdate));
 
-                String msg = "";
                 tsdm.setIndex(i);
                 tsdm.setLastUpdateTimes(lastUpdate[3] + " " + lastUpdate[4]);
                 bduDao.updateTsdm(tsdm);
@@ -328,8 +331,7 @@ public class MessagePush {
                     Date now = TimeUtil.parseDate(lastUpdate[3] + " " + lastUpdate[4], format);
                     if(result.getTime()<now.getTime()){
                         String num = a.parent().attr("id").replaceAll("\\D", "");
-                        String m="天使论坛已经更新该番剧"+tsdm.getAnimeName()+"资源，传送门："+tsdm.getTsdmUrl()+"#"+num;
-                        log.info(m);
+                        log.info("天使论坛已经更新该番剧"+tsdm.getAnimeName()+"资源，传送门："+tsdm.getTsdmUrl()+"#"+num);
 //                        DoSoming.messagePush(msg);
                     }else{
                         continue;
@@ -429,7 +431,7 @@ public class MessagePush {
                         while (n instanceof Element){
                             n= n.nextSibling();
                         }
-                       password=((TextNode)n).text();
+                        password=((TextNode)n).text();
                     }
                     password = StringUtil.matchStr(password,"\\w{4}",String.class);
 
@@ -458,7 +460,7 @@ public class MessagePush {
     public void tsdm() {
 
         //获取萌娘百科番剧条目
-        Document anime = CrawlerUtil.jsoupGet("https://zh.moegirl.org/zh-hans/日本2017年春季动画", Document.class, Connection.Method.GET);
+        Document anime = CrawlerUtil.jsoupGet("https://zh.moegirl.org/zh-hans/日本2017年春季动画", CrawlerUtil.DataType.domcument, Connection.Method.GET);
         //萌娘百科番局条目父元素
         Element mw = anime.select("#mw-content-text").first();
 
@@ -530,7 +532,7 @@ public class MessagePush {
         String e = TimeUtil.formatDate(date, "E").replace("星期", "每周");
         String hour = TimeUtil.formatDate(date, "HH:mm");
         Tsdm t=new Tsdm();
-        t.setUpdateTime(e + "%");
+        t.setUpdateTime("%" +e + "%");
         todayTsdms = bduDao.selectTsdm(t);
         boolean flag = "00:00".equals(hour);
         if (flag) {
@@ -547,8 +549,16 @@ public class MessagePush {
         DoSoming.messagePush(strings);
     }
 
-    public static void main(String[] args) {
-        new MessagePush().parseTsdm();
 
+
+    public static void main(String[] args) {
+        DynamicTimer dynamicTimer=new DynamicTimer(()->{
+            log.info(123);
+        },"0/1 * * * * ?");
+        int i=10;
+        while (i-->0){
+            ThreadUtil.sleep(null,1);
+        }
     }
+
 }

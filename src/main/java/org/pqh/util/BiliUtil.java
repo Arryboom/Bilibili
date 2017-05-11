@@ -25,9 +25,10 @@ public class BiliUtil {
 	private static Logger log=Logger.getLogger(BiliUtil.class);
 	private static org.dom4j.Document xml= null;
 	private static JsonNode jsonNode;
-	public static String access_token;
+	public static String access_key;
 	private static String appkey;
 	private static String app_secret;
+	public static Map<String,String> bili_cookie;
 	static {
 		ObjectMapper objectMapper=new ObjectMapper();
 		objectMapper.enable(JsonParser.Feature.ALLOW_COMMENTS);
@@ -36,9 +37,21 @@ public class BiliUtil {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		access_token=biliDao.selectParam("access_token").get(0).getValue();
+		access_key=biliDao.selectParam("access_key").get(0).getValue();
+		refreshCookie();
+		if(access_key.isEmpty()||bili_cookie.size()==0){
+			throw new RuntimeException("请先到数据库param表设置好access_key或者bili用户cookie");
+		}
 		appkey=biliDao.selectParam("appkey").get(0).getValue();
 		app_secret=biliDao.selectParam("app_secret").get(0).getValue();
+	}
+
+	public static void refreshCookie(){
+			bili_cookie=new HashMap<>();
+			String keys[]=new String[]{"DedeUserID","DedeUserID__ckMd5","SESSDATA"};
+			for(String key:keys){
+				bili_cookie.put(key,biliDao.selectParam(key).get(0).getValue());
+			}
 	}
 
 	/**
@@ -66,14 +79,14 @@ public class BiliUtil {
 	 */
 	public static Bili setView(int aid, int page){
 		Queue<String> strings=new LinkedList<String>();
-		strings.offer(access_token);
+		strings.offer(access_key);
 		strings.offer(appkey);
 		strings.offer(aid+"");
 		strings.offer(page+"");
 		//拼接请求参数
 		Map<String,String> map=parseXml(strings,ApiUrl.AID.getUrl());
 		org.dom4j.Document document=null;
-		document = CrawlerUtil.jsoupGet(ApiUrl.AID.getUrl(), org.dom4j.Document.class, Connection.Method.GET,map.get("params_").split(","));
+		document = CrawlerUtil.jsoupGet(ApiUrl.AID.getUrl(), CrawlerUtil.DataType.domcument, Connection.Method.GET,map.get("params_").split(","));
 		if(document==null){
 			return null;
 		}
@@ -91,8 +104,8 @@ public class BiliUtil {
 				do {
 					ThreadUtil.sleep("access_key续期失败，请手动到数据库更新access_key", 30);
 					updateKey = biliDao.selectParam("access_token").get(0).getValue();
-				} while (updateKey.equals(access_token));
-				access_token = updateKey;
+				} while (updateKey.equals(access_key));
+				access_key = updateKey;
 			}
 			ThreadUtil.sleep(LogUtil.getLineInfo()+"\n"+code.getText(),3);
 			return setView(aid, page);
@@ -148,7 +161,7 @@ public class BiliUtil {
 	public static void insertBangumi() {
 		for (int season_id = 1; season_id < 7000; season_id++) {
 			log.info("season_id:" + season_id);
-			JsonNode node = CrawlerUtil.jsoupGet(ApiUrl.bangumiAnime.getUrl(season_id), JsonNode.class, Connection.Method.GET);
+			JsonNode node = CrawlerUtil.jsoupGet(ApiUrl.bangumiAnime.getUrl(season_id), CrawlerUtil.DataType.json, Connection.Method.GET);
 			if (node.get("code").asInt() == 10) {
 				continue;
 			}
@@ -188,7 +201,7 @@ public class BiliUtil {
 	 */
 	public static void updateAccesskey(){
 		log.info("自动续期access_key");
-		JsonNode jsonNode=CrawlerUtil.jsoupGet(ApiUrl.accessKey.getUrl(BiliUtil.access_token), JsonNode.class,Connection.Method.GET);
+		JsonNode jsonNode=CrawlerUtil.jsoupGet(ApiUrl.accessKey.getUrl(BiliUtil.access_key), CrawlerUtil.DataType.json,Connection.Method.GET);
 		log.info(jsonNode);
 	}
 
@@ -244,6 +257,5 @@ public class BiliUtil {
 		}
 		throw new RuntimeException("找不到"+url+"的表单参数");
 	}
-
 
 }
