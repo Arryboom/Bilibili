@@ -2,18 +2,17 @@ package org.pqh.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.log4j.Logger;
 import org.jsoup.Connection;
 import org.jsoup.nodes.Document;
 import org.pqh.dao.BiliDao;
 import org.pqh.entity.statistics.AvCount;
 import org.pqh.entity.statistics.AvPlay;
 import org.pqh.entity.statistics.Ranking;
-import org.pqh.qq.DoSoming;
+import org.pqh.msg.MessagePush;
 import org.pqh.util.ApiUrl;
 import org.pqh.util.CrawlerUtil;
+import org.pqh.util.LogUtil;
 import org.springframework.dao.DuplicateKeyException;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -28,7 +27,7 @@ import java.util.*;
 public class AvCountService {
     @Resource
     private BiliDao biliDao;
-    private static Logger log= Logger.getLogger(AvCountService.class);
+
 
     public Map<String, List> getAvCount() {
         List<AvCount> avCountList = biliDao.selectAvCount(null,null);
@@ -48,9 +47,9 @@ public class AvCountService {
         map.put("Count", integerList);
         return map;
     }
-    @Scheduled(cron = "0 0 0/1 * * ?")
+
     public  void setPlays() {
-        if(!DoSoming.flag.get("rank")){
+        if(!MessagePush.flag.get("rank")){
             return;
         }
         Timestamp timestamp=new Timestamp(System.currentTimeMillis());
@@ -59,7 +58,7 @@ public class AvCountService {
         try {
             JsonNode jsonNode=CrawlerUtil.jsoupGet(ApiUrl.bangumi.getUrl("154"),CrawlerUtil.DataType.json, Connection.Method.GET);
             if(jsonNode==null){
-                log.info("无法解析番剧接口信息");
+                LogUtil.getLogger().info("无法解析番剧接口信息");
                 return;
             }
             JsonNode arrayNode=jsonNode.get("result").get("list");
@@ -73,7 +72,7 @@ public class AvCountService {
                 try {
                     jsonNode=objectMapper.readTree(jsonStr).get("result");
                 } catch (IOException e) {
-                    log.error("获取番剧播放量出错："+e.getMessage());
+                    LogUtil.getLogger().error("获取番剧播放量出错："+e.getMessage());
                     continue;
                 }
                 int newest_ep_index=jsonNode.get("newest_ep_index").asInt();

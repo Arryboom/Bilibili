@@ -1,7 +1,6 @@
 package org.pqh.util;
 
-import org.apache.log4j.Logger;
-import org.pqh.entity.*;
+import org.pqh.entity.Bili;
 import org.pqh.entity.vstorage.*;
 
 import javax.swing.*;
@@ -15,7 +14,7 @@ import java.util.Map;
  * Created by 10295 on 2016/8/4.
  */
 public class ReflexUtil {
-    private static Logger log= Logger.getLogger(ReflexUtil.class);
+
 
     public static Map<String, Object> getMap() {
         Map<String, Object> map = new HashMap<>();
@@ -39,11 +38,11 @@ public class ReflexUtil {
         try {
             return Class.forName(classname).newInstance();
         } catch (InstantiationException e) {
-            log.error(e);
+            LogUtil.getLogger().error(String.valueOf(e));
         } catch (IllegalAccessException e) {
-            log.error(e);
+            LogUtil.getLogger().error(String.valueOf(e));
         } catch (ClassNotFoundException e) {
-            log.error(e);
+            LogUtil.getLogger().error(String.valueOf(e));
         }
         return null;
     }
@@ -67,7 +66,7 @@ public class ReflexUtil {
             }
             return true;
         } catch (IllegalAccessException e) {
-            log.error(e);
+            LogUtil.getLogger().error(String.valueOf(e));
         }
         return false;
     }
@@ -79,7 +78,7 @@ public class ReflexUtil {
      * @return
      */
     public static void setObject(Object object,String key,Object value) {
-        Field field=null;
+        Field field;
         try {
             field = object.getClass().getDeclaredField(key);
         }catch (NoSuchFieldException e) {
@@ -93,7 +92,7 @@ public class ReflexUtil {
                         PropertiesUtil.updateProperties("excludenode",excludenode.equals("")?key:excludenode+","+key,null);
                     }
                 }
-                log.error(e+"\n"+object.getClass()+" "+key+" "+value);
+                LogUtil.getLogger().error(e+"\n"+object.getClass()+" "+key+" "+value);
                 return;
             }
         }
@@ -124,12 +123,12 @@ public class ReflexUtil {
                 try {
                     field.set(object,null);
                 } catch (IllegalAccessException e1) {
-                    log.error(e);
+                    LogUtil.getLogger().error(String.valueOf(e));
                 }
             }
         }
         catch (IllegalAccessException e) {
-            log.error(e);
+            LogUtil.getLogger().error(String.valueOf(e));
         }
     }
 }

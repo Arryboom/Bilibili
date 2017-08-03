@@ -84,7 +84,11 @@ public enum ApiUrl {
     //获取B站播放历史纪录
     biliHistory("http://api.bilibili.com/x/v2/history?access_key={0}&pn={1}&ps={2}","http://api.bilibili.com/x/v2/history/{0}"),
     //B站视频源地址
-    biliVideoUrl("http://vs{0}.acg.tv{1}")
+    biliVideoUrl("http://vs{0}.acg.tv{1}"),
+    //获取公网ip
+    ipAddress("http://ip.chinaz.com/getip.aspx"),
+    //腾讯云域名解析记录
+    qcloudip("https://cns.api.qcloud.com/v2/index.php?");
     ;
     private  final String url;
 

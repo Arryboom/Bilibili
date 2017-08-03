@@ -2,15 +2,14 @@ package org.pqh.util;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.Logger;
 
 import java.io.*;
 
 /**
  * Created by reborn on 2017/4/23.
  */
-public class RunCommand {
-    private static Logger log= Logger.getLogger(RunCommand.class);
+public class RunCommandUtil {
+
 
     public interface returnMsg{
         void doSoming(String returnMsg);
@@ -23,7 +22,7 @@ public class RunCommand {
     public  static void runCommand(String command){
         runCommand(command,returnMsg -> {
             if(!returnMsg.replaceAll(" ","").isEmpty()) {
-                log.info(returnMsg);
+                LogUtil.getLogger().info(returnMsg);
             }
         });
     }
@@ -53,10 +52,10 @@ public class RunCommand {
                 returnMsg.doSoming(line);
             }
             long b=System.currentTimeMillis();
-            log.info("运行命令花费时间"+TimeUtil.longTimeFormatString(b-a));
+            LogUtil.getLogger().info("运行命令花费时间"+TimeUtil.longTimeFormatString(b-a));
 
         } catch (IOException e) {
-            log.error(e);
+            LogUtil.getLogger().error(String.valueOf(e));
         }finally {
             try {
                 if(in!=null)

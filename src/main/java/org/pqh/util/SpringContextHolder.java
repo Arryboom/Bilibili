@@ -6,6 +6,8 @@ import org.pqh.dao.BiliHistoryDao;
 import org.pqh.dao.VstorageDao;
 import org.pqh.service.AvCountService;
 import org.pqh.service.InsertService;
+import org.springframework.beans.factory.support.BeanDefinitionBuilder;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
@@ -41,6 +43,38 @@ public class SpringContextHolder{
         applicationContext.registerShutdownHook();
     }
 
+
+    public  void destroy(String beanName) {
+        DefaultListableBeanFactory beanFactory = (DefaultListableBeanFactory) applicationContext
+                .getBeanFactory();
+
+        LogUtil.getLogger().info("destroy bean " + beanName);
+        if(beanFactory.containsBean(beanName)){
+            beanFactory.destroySingleton(beanName);
+            beanFactory.destroyBean(beanName);
+            beanFactory.removeBeanDefinition(beanName);
+        }else {
+            LogUtil.getLogger().info("No {} defined in bean container.", beanName);
+        }
+    }
+
+    public static void addToBeanFactory(Class<?> beanClass,String beanName,Object ...params){
+
+        DefaultListableBeanFactory beanFactory = (DefaultListableBeanFactory) applicationContext
+                .getBeanFactory();
+        if(!beanFactory.containsBean(beanName)){
+            BeanDefinitionBuilder beanDefinitionBuilder= BeanDefinitionBuilder.rootBeanDefinition(beanClass);
+
+            if(params!=null&&params.length%2==0){
+                for(int i=0;i<params.length/2;i++){
+                    beanDefinitionBuilder.addPropertyValue(params[2*i].toString(),params[2*i+1]);
+                }
+            }
+
+            beanFactory.registerBeanDefinition(beanName, beanDefinitionBuilder.getBeanDefinition());
+            LogUtil.getLogger().info("Add {} to bean container.", beanName);
+        }
+    }
 
 
     /**

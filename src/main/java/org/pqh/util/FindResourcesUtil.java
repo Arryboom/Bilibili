@@ -1,6 +1,5 @@
 package org.pqh.util;
 
-import org.apache.log4j.Logger;
 import org.jsoup.Connection;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -10,13 +9,16 @@ import org.pqh.task.TaskBtacg;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.lang.reflect.Field;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by 10295 on 2016/7/10.
  */
 public class FindResourcesUtil {
-    private static Logger log=Logger.getLogger(FindResourcesUtil.class);
+
     public static Map<String,List<BtAcg>> map=new HashMap<String, List<BtAcg>>();
     /**
      * 多线程从Btacg搜索关键字资源种子
@@ -54,7 +56,7 @@ public class FindResourcesUtil {
         Document document = CrawlerUtil.jsoupGet(ApiUrl.btAcgSearch.getUrl(keyword,page), CrawlerUtil.DataType.domcument, Connection.Method.GET);
         if(page==1) {
             String message=document.select(".text_bold").text();
-            log.info(message);
+            LogUtil.getLogger().info(message);
             int i=Integer.parseInt(StringUtil.matchStr(message,"\\d+条",String.class).replaceAll("条",""));
             TaskBtacg.pages=i/30+(i%30==0?0:1);
         }
@@ -87,7 +89,7 @@ public class FindResourcesUtil {
                             break;
                         }
                     } catch (IllegalAccessException e) {
-                        log.error(e);
+                        LogUtil.getLogger().error(String.valueOf(e));
                     }
                 }
                 if(flag){
@@ -127,7 +129,7 @@ public class FindResourcesUtil {
                         fields[i].set(btAcg, ApiUrl.btAcgIndex.getUrl(td.select("a").attr("href")));
                     }
                 }catch (IllegalAccessException e) {
-                    log.error(e);
+                    LogUtil.getLogger().error(String.valueOf(e));
                 }
                 i++;
             }

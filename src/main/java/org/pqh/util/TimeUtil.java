@@ -37,6 +37,13 @@ public class TimeUtil{
         return simpleDateFormat.format(date!=null?date:new Date());
     }
 
+    public static String formatDate(Date date){
+        return formatDate(date,null);
+    }
+
+    public static String formatDate(String pattern){
+        return formatDate(null,pattern);
+    }
 
     /**
      * 字符串转日期

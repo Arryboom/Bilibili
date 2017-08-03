@@ -1,9 +1,7 @@
 package org.pqh.util;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.log4j.Logger;
 import org.pqh.entity.Param;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
@@ -11,9 +9,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
+import java.net.URL;
+import java.util.*;
 
 import static org.pqh.util.SpringContextHolder.biliDao;
 /**
@@ -21,8 +18,23 @@ import static org.pqh.util.SpringContextHolder.biliDao;
  */
 @Component
 public class PropertiesUtil {
-    private static Logger log= Logger.getLogger(PropertiesUtil.class);
 
+    private static Map<String,String> fileMap=new HashMap<>();
+
+    private static String path=getFilePath("config.properties");
+
+    public static String getFilePath(String fileName){
+        if(fileMap.get(fileName)==null){
+            URL url=PropertiesUtil.class.getClassLoader().getResource(fileName);
+            if(url==null){
+                return null;
+            }else{
+                fileMap.put(fileName,url.getPath());
+            }
+        }
+
+        return fileMap.get(fileName);
+    }
     /**
      * 获取配置文件所有配置项
      * @return
@@ -31,13 +43,12 @@ public class PropertiesUtil {
         InputStream inputStream=null;
 
         try {
-            String path=PropertiesUtil.class.getClassLoader().getResource("config.properties").getPath();
             inputStream=new FileInputStream(path);
             Properties p = new Properties();
             p.load(inputStream);
             return p;
         } catch (IOException e) {
-            log.error(e);
+            LogUtil.getLogger().error(String.valueOf(e));
             return  null;
         }finally {
             try {
@@ -45,7 +56,7 @@ public class PropertiesUtil {
                     inputStream.close();
                 }
             } catch (IOException e) {
-                log.error(e);
+                LogUtil.getLogger().error(String.valueOf(e));
             }
         }
     }
@@ -67,7 +78,6 @@ public class PropertiesUtil {
             param=new Param(key,value,"#"+desc);
             biliDao.insertParam(param);
         }
-        String path=PropertiesUtil.class.getClassLoader().getResource("config.properties").getPath();
         PropertiesUtil.createConfig(new File(path));
     }
 
@@ -104,7 +114,6 @@ public class PropertiesUtil {
 
     public static void updateProperties(String key,String value,String desc){
         try {
-            String path=PropertiesUtil.class.getClassLoader().getResource("config.properties").getPath();
             File file=new File(path);
             List<String> strings= FileUtils.readLines(file,"GBK");
             List<String> _strings=new ArrayList<String>();
@@ -128,9 +137,8 @@ public class PropertiesUtil {
         }
     }
 
-    @Scheduled(cron = "0 0/3 * * * ?")
+
     public  void updateProperties(){
-        String path=PropertiesUtil.class.getClassLoader().getResource("config.properties").getPath();
         File file=new File(path);
         try {
             List<String> strings= FileUtils.readLines(file,"GBK");
@@ -141,7 +149,8 @@ public class PropertiesUtil {
                 String key=str.substring(0,index);
                 String value=str.substring(index+1,str.length());
                 Param param=new Param(key,value,desc);
-                if(biliDao.selectParam(key).get(0)==null){
+                LogUtil.getLogger().debug(param.toString());
+                if(biliDao.selectParam(key)==null){
                     biliDao.insertParam(param);
                 }else{
                     biliDao.updateParam(param);
@@ -149,6 +158,8 @@ public class PropertiesUtil {
             }
         } catch (IOException e) {
             e.printStackTrace();
+        }catch (Exception e){
+            LogUtil.getLogger().error(e.getMessage());
         }
     }
 
@@ -166,7 +177,7 @@ public class PropertiesUtil {
         try {
             FileUtils.writeLines(file,"GBK",stringList);
         } catch (IOException e) {
-            log.error(e);
+            LogUtil.getLogger().error(String.valueOf(e));
         }
     }
 }

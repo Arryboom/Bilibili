@@ -1,8 +1,8 @@
 package org.pqh.redis;
 
 import org.apache.ibatis.cache.Cache;
-import org.apache.log4j.Logger;
 import org.pqh.util.AlgorithmUtil;
+import org.pqh.util.LogUtil;
 import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.data.redis.serializer.JdkSerializationRedisSerializer;
@@ -17,7 +17,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public class RedisCache implements Cache {
 
-    private static Logger log= Logger.getLogger(RedisCache.class);
+
 
     private static JedisConnectionFactory jedisConnectionFactory;
 
@@ -33,7 +33,7 @@ public class RedisCache implements Cache {
         if (id == null) {
             throw new IllegalArgumentException("Cache instances require an ID");
         }
-        log.debug("MybatisRedisCache:id=" + id);
+        LogUtil.getLogger().debug("MybatisRedisCache:id=" + id);
         this.id = id;
     }
     @Override

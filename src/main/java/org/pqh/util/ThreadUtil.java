@@ -1,7 +1,8 @@
 package org.pqh.util;
 
-import org.apache.log4j.Logger;
 import org.pqh.task.TaskCid;
+
+import java.util.concurrent.TimeUnit;
 
 import static org.pqh.util.SpringContextHolder.biliDao;
 import static org.pqh.util.SpringContextHolder.threadPoolTaskExecutor;
@@ -10,7 +11,6 @@ import static org.pqh.util.SpringContextHolder.threadPoolTaskExecutor;
  * Created by 10295 on 2016/8/4.
  */
 public class ThreadUtil {
-    private static Logger log= Logger.getLogger(ThreadUtil.class);
 
 
     /**
@@ -20,17 +20,17 @@ public class ThreadUtil {
     public static <T extends Number> void sleep(T time){
         try {
             if(time.getClass().equals(Integer.class)){
-                Thread.sleep((Integer)time*1000);
+                TimeUnit.SECONDS.sleep((Integer) time);
             }else{
-                Thread.sleep((Long) time);
+                TimeUnit.MILLISECONDS.sleep((Long) time);
             }
 
         } catch (InterruptedException e) {
-            log.error(e);
+            LogUtil.getLogger().error(String.valueOf(e));
         }
     }
 
-    public static void addTask(int id,int type) {
+    public static void addTask(int id) {
         for (int cid = BiliUtil.getSave(id);; cid++) {
             if(biliDao.selectSave(id).get(0).isLatest()){
                 ThreadUtil.sleep(15);
@@ -58,23 +58,24 @@ public class ThreadUtil {
      */
     public static <T extends Number> void sleep(String message,T time){
         try {
-            String msg=message + "休息" + time;
+            StackTraceElement s=LogUtil.getStrack(2);
+            String msg=message+"\t"+s +"休息" + time;
             if(time.getClass().equals(Integer.class)){
                 if((Integer)time>10) {
-                    log.info(msg+"秒");
+                    LogUtil.getLogger().info(msg+"秒");
                 }
-                log.debug(msg+"秒");
-                Thread.sleep((Integer)time*1000);
+                LogUtil.getLogger().debug(msg+"秒");
+                TimeUnit.SECONDS.sleep((Integer)time);
             }else{
                 if((Long)time>10) {
-                    log.info(msg+"豪秒");
+                    LogUtil.getLogger().info(msg+"毫秒");
                 }
-                log.debug(msg+"豪秒");
-                Thread.sleep((Long) time);
+                LogUtil.getLogger().debug(msg+"毫秒");
+                TimeUnit.MILLISECONDS.sleep((Long)time);
             }
 
         } catch (InterruptedException e) {
-            log.error(e);
+            LogUtil.getLogger().error(String.valueOf(e));
         }
     }
 

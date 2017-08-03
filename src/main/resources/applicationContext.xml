@@ -80,18 +80,9 @@
 		<property name="suffix" value=".jsp"></property>
 	</bean>
 
-	<task:executor id="executor" pool-size="5" />
+	<!--<task:executor id="executor" pool-size="5" />-->
 	<task:scheduler id="scheduler" pool-size="10" />
-	<task:annotation-driven executor="executor" scheduler="scheduler" />
-
-	<!--<task:scheduled-tasks>-->
-		<!--&lt;!&ndash;   -->
-            <!--这里表示的是每隔五秒执行一次   -->
-        <!--&ndash;&gt;-->
-		<!--<task:scheduled  method="show" cron="*/5 * * * * ?" />-->
-		<!--<task:scheduled ref="myTaskXml" method="print" cron="*/10 * * * * ?"/>-->
-	<!--</task:scheduled-tasks>-->
-
+	<task:annotation-driven executor="taskExecutor" scheduler="scheduler" />
 
 
 	<bean class="org.pqh.util.SpringContextHolder" lazy-init="false" />

@@ -7,7 +7,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.util.EntityUtils;
-import org.apache.log4j.Logger;
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
@@ -31,14 +30,14 @@ import static org.pqh.util.SpringContextHolder.vstorageDao;
  */
 
 public class DownLoadUtil {
-    private static Logger log= Logger.getLogger(DownLoadUtil.class);
+
     /**
      * 下载资源
      * @param href 下载链接
      * @param outputPath 输出文件
      */
     public static void downLoad(String href,String outputPath){
-        log.info("下载链接:"+href);
+        LogUtil.getLogger().info("下载链接:"+href);
         OutputStream outputStream = null;
         HttpEntity httpEntity=null;
         CloseableHttpResponse closeableHttpResponse=null;
@@ -67,7 +66,7 @@ public class DownLoadUtil {
                 }
                 EntityUtils.consume(httpEntity);
             } catch (IOException e) {
-                log.error(e);
+                LogUtil.getLogger().error(String.valueOf(e));
             }
         }
 
@@ -93,21 +92,21 @@ public class DownLoadUtil {
             else {
                 Element root=saxReader.read(in).getRootElement();
                 if(root.element("source")!=null&&root.element("source").getText().equals("e-r")){
-                    log.error(href+"该链接没有弹幕");
+                    LogUtil.getLogger().error(href+"该链接没有弹幕");
                     return null;
                 }else{
                     return (T)root;
                 }
             }
         } catch (IOException e) {
-            log.error(e);
+            LogUtil.getLogger().error(String.valueOf(e));
         } catch (DocumentException e) {
-            log.error(e);
+            LogUtil.getLogger().error(String.valueOf(e));
         }finally {
 //            try {
 //                EntityUtils.consume(httpEntity);
 //            } catch (IOException e) {
-//                log.error(e);
+//                LogUtil.getLogger().error(String.valueOf(e));
 //            }
 
         }
@@ -179,11 +178,12 @@ public class DownLoadUtil {
             do {
                 //弹幕接口
                 JsonNode jsonNode = CrawlerUtil.jsoupGet(ApiUrl.pptvDanMu.getUrl(cfg.get("id").asText(),pos), CrawlerUtil.DataType.json, Connection.Method.GET);
-                jsonNode = jsonNode.get("data").get("infos");
-                pos+=1000;
-                if(jsonNode.size()==1&&jsonNode.get(0).get("id").asInt()==0){
+                jsonNode = JsonUtil.findNodeByPath(jsonNode,"data","infos");
+                if(jsonNode==null||jsonNode.size()==1&&jsonNode.get(0).get("id").asInt()==0){
                     break;
                 }
+                pos+=1000;
+
                 for (JsonNode danmu : jsonNode) {
                     if(danmu.get("id").asInt()==0){
                         continue;
@@ -194,7 +194,7 @@ public class DownLoadUtil {
 
 
                     String d="<d p=\""+play_point+",1,25,"+Integer.parseInt(font_color,16) +",12450,,,\">"+content +"</d>";
-                    log.info(d);
+                    LogUtil.getLogger().info(d);
                     xml.add(d);
                 }
             }while (true);
@@ -223,12 +223,12 @@ public class DownLoadUtil {
             doc = reader.read("http://cdn.danmu.56.com/xml/2/v_" + vid + ".xml");
             d = (Element) doc.getRootElement().elements("d").get(0);
         } catch (DocumentException e) {
-            log.error("获取弹幕文件异常"+e.getMessage());
+            LogUtil.getLogger().error("获取弹幕文件异常"+e.getMessage());
             return;
 
         }
 
-        log.info("成功获取"+vid + ".xml");
+        LogUtil.getLogger().info("成功获取"+vid + ".xml");
         List nodes = d.elements("c");
         for (Iterator it = nodes.iterator(); it.hasNext();) {
             Element elm = (Element) it.next();
@@ -267,7 +267,7 @@ public class DownLoadUtil {
         try {
             File file=new File(filePath +".xml");
             FileUtils.writeLines(file,"UTF-8",strings);
-            log.info("弹幕成功下载到"+file.getPath()+"目录下");
+            LogUtil.getLogger().info("弹幕成功下载到"+file.getPath()+"目录下");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -314,7 +314,7 @@ public class DownLoadUtil {
      * @param filePath 弹幕生成路径
      */
     public static void youKuDanmu(String iid, String filePath){
-        log.info("iid="+iid+"弹幕生成路径="+ filePath);
+        LogUtil.getLogger().info("iid="+iid+"弹幕生成路径="+ filePath);
         Queue<String> strings = new LinkedList<>();
         int begin=0;
         List<JsonNode> jsonNodes=new ArrayList<>();
@@ -337,7 +337,7 @@ public class DownLoadUtil {
                 break;
             }
         }
-        log.info("爬取了"+jsonNodes.size()+"条弹幕");
+        LogUtil.getLogger().info("爬取了"+jsonNodes.size()+"条弹幕");
         Set<String> set=new HashSet<>();
         for(JsonNode s:jsonNodes){
             String content = s.get("content").asText();
@@ -395,7 +395,7 @@ public class DownLoadUtil {
                     if (flag && set.size() < max_count * min_count / 100) {
                         Long timestamp = jsonNode.get(i).get("timestamp").asLong();
                         href = ApiUrl.danmuDmroll.getUrl(timestamp,cid);
-                        log.debug("正在获取" + TimeUtil.formatDate(new Date(timestamp * 1000), null) + "历史弹幕");
+                        LogUtil.getLogger().debug("正在获取" + TimeUtil.formatDate(new Date(timestamp * 1000)) + "历史弹幕");
                         element = downLoadDanmu(href);
                         set.addAll(element.elements("d"));
                     } else {
@@ -437,7 +437,7 @@ public class DownLoadUtil {
                         count++;
                     }
                 }
-                log.info(key+"参数共检测出" + count + "个ID准备拼接到sql语句里面进行查询");
+                LogUtil.getLogger().info(key+"参数共检测出" + count + "个ID准备拼接到sql语句里面进行查询");
             }
 
         }
@@ -451,7 +451,7 @@ public class DownLoadUtil {
     public static void downLoadDanmu(Map<String,String> map, String dirPath, int type){
         long a=System.currentTimeMillis();
         checkId(map);
-        log.info("查询参数"+map);
+        LogUtil.getLogger().info("查询参数"+map);
         List<Data> dataList=null;
         switch (type){
             case 1:dataList=vstorageDao.selectData(map);break;
@@ -459,7 +459,7 @@ public class DownLoadUtil {
             default:throw new RuntimeException("不存在第"+type+"条查询语句");
         }
         long b=System.currentTimeMillis();
-        log.info("查询耗费时间"+ TimeUtil.longTimeFormatString(b-a)+"，查询到"+dataList.size()+"条记录");
+        LogUtil.getLogger().info("查询耗费时间"+ TimeUtil.longTimeFormatString(b-a)+"，查询到"+dataList.size()+"条记录");
         Map<String,List<Data>> listMap=new HashMap<>();
         for(Data data:dataList){
             String dirname= StringUtil.convertFileName(data.getTitle());
@@ -488,7 +488,7 @@ public class DownLoadUtil {
                     try {
                         FileUtils.deleteDirectory(file);
                     } catch (IOException e) {
-                        log.error(e);
+                        LogUtil.getLogger().error(String.valueOf(e));
                     }
                 }
             }

@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.FileFilterUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.Logger;
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
@@ -19,10 +18,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
+import static org.pqh.util.PropertiesUtil.getFilePath;
 import static org.pqh.util.SpringContextHolder.biliDao;
 public class BiliUtil {
 
-	private static Logger log=Logger.getLogger(BiliUtil.class);
+
 	private static org.dom4j.Document xml= null;
 	private static JsonNode jsonNode;
 	public static String access_key;
@@ -33,7 +33,7 @@ public class BiliUtil {
 		ObjectMapper objectMapper=new ObjectMapper();
 		objectMapper.enable(JsonParser.Feature.ALLOW_COMMENTS);
 		try {
-			jsonNode=objectMapper.readTree(new File(BiliUtil.class.getClassLoader().getResource("region.json").getPath()));
+			jsonNode=objectMapper.readTree(new File(getFilePath("region.json")));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -97,7 +97,7 @@ public class BiliUtil {
 			if (code.getText().equals("-403") || code.getText().equals("-404")||code.getText().equals("10")) {
 				return null;
 			} else if (code.getText().equals("-503")) {
-				ThreadUtil.sleep(LogUtil.getLineInfo()+"\n"+code.getText(),3);
+				ThreadUtil.sleep(code.getText(),3);
 				return setView(aid, page);
 			}else if(code.getText().equals("-2")){
 				String updateKey = "";
@@ -107,7 +107,7 @@ public class BiliUtil {
 				} while (updateKey.equals(access_key));
 				access_key = updateKey;
 			}
-			ThreadUtil.sleep(LogUtil.getLineInfo()+"\n"+code.getText(),3);
+			ThreadUtil.sleep(code.getText(),3);
 			return setView(aid, page);
 
 		}
@@ -159,10 +159,10 @@ public class BiliUtil {
 	}
 
 	public static void insertBangumi() {
-		for (int season_id = 1; season_id < 7000; season_id++) {
-			log.info("season_id:" + season_id);
+		for (int season_id = 6167; season_id < 8000; season_id++) {
+			LogUtil.getLogger().info("season_id:" + season_id);
 			JsonNode node = CrawlerUtil.jsoupGet(ApiUrl.bangumiAnime.getUrl(season_id), CrawlerUtil.DataType.json, Connection.Method.GET);
-			if (node.get("code").asInt() == 10) {
+			if (node==null||node.get("code").asInt() == 10) {
 				continue;
 			}
 			String title = node.get("result").get("title").asText();
@@ -200,9 +200,9 @@ public class BiliUtil {
 	 * 自动续期access_key
 	 */
 	public static void updateAccesskey(){
-		log.info("自动续期access_key");
+		LogUtil.getLogger().info("自动续期access_key");
 		JsonNode jsonNode=CrawlerUtil.jsoupGet(ApiUrl.accessKey.getUrl(BiliUtil.access_key), CrawlerUtil.DataType.json,Connection.Method.GET);
-		log.info(jsonNode);
+		LogUtil.getLogger().info(String.valueOf(jsonNode));
 	}
 
 
@@ -217,11 +217,11 @@ public class BiliUtil {
 
 		try {
 			if(xml==null) {
-				String xmlPath=BiliUtil.class.getClassLoader().getResource("formparam.xml").getPath();
+				String xmlPath=getFilePath("formparam.xml");
 				xml = new SAXReader().read(xmlPath);
 			}
 		} catch (DocumentException e) {
-			log.error(e);
+			LogUtil.getLogger().error(String.valueOf(e));
 			e.printStackTrace();
 		}
 		List<org.dom4j.Element> forms=xml.getRootElement().elements();

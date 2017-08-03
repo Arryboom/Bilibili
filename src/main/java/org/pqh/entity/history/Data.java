@@ -1,8 +1,5 @@
 package org.pqh.entity.history;
 
-import com.alibaba.fastjson.JSON;
-import com.fasterxml.jackson.databind.JsonNode;
-
 /**
  * Created by reborn on 2017/4/13.
  */

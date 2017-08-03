@@ -1,4 +1,3 @@
-import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.io.FileUtils;
 import org.jsoup.Connection;
 import org.jsoup.nodes.Document;
@@ -6,16 +5,16 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.junit.Test;
 import org.pqh.entity.Cid;
+import org.pqh.task.DynamicTimer;
 import org.pqh.util.*;
 
 import java.io.File;
-import java.io.IOException;
-import java.util.List;
 
 /**
  * Created by reborn on 2017/4/23.
  */
-public class Demo {
+
+public class Demo{
     public static void main(String[] args) {
 
     }
@@ -57,34 +56,35 @@ public class Demo {
     public void testdecompression(){
         File[] files=new File("E:\\BaiduNetdiskDownload").listFiles();
         for(File file:files) {
-            RunCommand.decompression(file,"E:\\BaiduNetdiskDownload");
+            RunCommandUtil.decompression(file,"E:\\BaiduNetdiskDownload");
             FileUtils.deleteQuietly(file);
         }
     }
-@Test
-    public void testDoming() {
 
-        List<String> domains = null;
-        try {
-            domains = FileUtils.readLines(new File("E:\\ideaIU-2017.1.win\\Projects\\selenium\\domain.txt"), "UTF-8");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        for (int i = 0; i < domains.size();i++ ) {
-            String checkDomain=domains.get(i);
-            JsonNode jsonNode=CrawlerUtil.jsoupGet("http://cgi.urlsec.qq.com/index.php?a=check&m=check&url="+checkDomain, CrawlerUtil.DataType.json, Connection.Method.GET);
-            int j=jsonNode.get("data").get("results").get("whitetype").asInt();
-            if(j==3){
-                try {
-                    FileUtils.writeStringToFile(new File("safedomain.txt"),checkDomain,"UTF-8",true);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            ThreadUtil.sleep(null,1);
-            System.out.println("读取到第" + (i+1) + "行");
-        }
+    /**
+     *测试动态定时器类
+     */
+    @Test
+    public void testDynamicTimer(){
+        DynamicTimer dynamicTimer=SpringContextHolder.getBean("dynamicTimer");
+
+        DynamicTimer.maps.put("abc","0/1 * * * * ?");
+       dynamicTimer.addTriggerTask(()->{
+           LogUtil.getLogger().info("HI");
+       },"abc");
+
+        DynamicTimer.maps.put("abc","0/1 * * * * ?");
+        dynamicTimer.addTriggerTask(()->{
+            LogUtil.getLogger().info("Hello");
+        },"abc");
+       int i=10;
+       while (i-->0){
+           ThreadUtil.sleep(10);
+       }
 
     }
 
-}
+  }
+
+
+

@@ -1,7 +1,6 @@
 package org.pqh.util;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import org.apache.log4j.Logger;
 import org.jsoup.Connection;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -16,7 +15,7 @@ import java.util.Map;
  * Created by 10295 on 2016/7/9.
  */
 public class TsdmUtil {
-    private static Logger log=Logger.getLogger(TsdmUtil.class);
+
     public static final String SC="zh-hans";
     public static final String TC="zh-hant";
     static {

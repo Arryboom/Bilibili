@@ -4,14 +4,15 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.io.FileUtils;
-import org.apache.log4j.Logger;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -19,7 +20,7 @@ import java.util.regex.Pattern;
  * Created by reborn on 2017/1/5.
  */
 public class StringUtil {
-    private static Logger log= Logger.getLogger(StringUtil.class);
+
     private final String json;
     public StringUtil(String json){
         this.json=json;
@@ -27,11 +28,59 @@ public class StringUtil {
     }
 
     public static String convertFileName(String fileName){
-//        文件名在操作系统中不允许出现  / \ " : | * ? < > 故将其以空替代
+        // 文件名在操作系统中不允许出现  / \ " : | * ? < > 故将其以空替代
         Pattern pattern = Pattern.compile("[\\s\\\\/:\\*\\?\\\"<>\\|]");
         Matcher matcher = pattern.matcher(fileName);
-// 将匹配到的非法字符以空替换
+        // 将匹配到的非法字符以空替换
         return matcher.replaceAll("");
+    }
+
+    /**
+     * 获取参数的字典排序
+     * @param maps 参数key-value map集合
+     * @return String 排序后的字符串
+     */
+    public static String getOrderByLexicographic(Map<String,Object> maps){
+        return splitParams(lexicographicOrder(getParamsName(maps)),maps);
+    }
+    /**
+     * 获取参数名称 key
+     * @param maps 参数key-value map集合
+     * @return
+     */
+    private static List<String> getParamsName(Map<String,Object> maps){
+        List<String> paramNames = new ArrayList<String>();
+        for(Map.Entry<String,Object> entry : maps.entrySet()){
+            paramNames.add(entry.getKey());
+        }
+        return paramNames;
+    }
+    /**
+     * 参数名称按字典排序
+     * @param paramNames 参数名称List集合
+     * @return 排序后的参数名称List集合
+     */
+    private static List<String> lexicographicOrder(List<String> paramNames){
+        Collections.sort(paramNames);
+        return paramNames;
+    }
+    /**
+     * 拼接排序好的参数名称和参数值
+     * @param paramNames 排序后的参数名称集合
+     * @param maps 参数key-value map集合
+     * @return String 拼接后的字符串
+     */
+    private static String splitParams(List<String> paramNames,Map<String,Object> maps){
+        StringBuilder paramStr = new StringBuilder();
+        for(String paramName : paramNames){
+            paramStr.append("&"+paramName+"=");
+            for(Map.Entry<String,Object> entry : maps.entrySet()){
+                if(paramName.equals(entry.getKey())){
+                    paramStr.append(String.valueOf(entry.getValue()));
+                }
+            }
+        }
+        return paramStr.toString().substring(1);
     }
 
     /**
@@ -49,7 +98,7 @@ public class StringUtil {
             }
             unicodeBytes = unicodeBytes + "\\u" + hexB;
         }
-        log.info(gbString+"\tunicodeBytes is: " + unicodeBytes);
+        LogUtil.getLogger().info(gbString+"\tunicodeBytes is: " + unicodeBytes);
         return unicodeBytes;
     }
 
@@ -68,7 +117,7 @@ public class StringUtil {
         List<String> list=null;
         while (matcher.find()) {
             s=matcher.group();
-            log.debug("匹配结果"+s);
+            LogUtil.getLogger().debug("匹配结果"+s);
             if(c==String.class) {
                 return (T)s;
             }else if(c==List.class){
@@ -179,21 +228,21 @@ public class StringUtil {
      * @return
      */
     public JsonNode fuckJson(String fileName){
-        log.info("请手动修改json数据格式");
+        LogUtil.getLogger().info("请手动修改json数据格式");
         try {
             File file=new File("ErrorJson/"+fileName);
             FileUtils.writeStringToFile(file,json,"UTF-8");
             long a=System.currentTimeMillis();
             while (true){
                 if(FileUtils.isFileNewer(file,a)){
-                    log.info("文件更新了,尝试重新解析json数据");
+                    LogUtil.getLogger().info("文件更新了,尝试重新解析json数据");
                     try {
                         JsonNode jsonNode=new ObjectMapper().readTree(file);
-                        log.info("json数据解析成功");
+                        LogUtil.getLogger().info("json数据解析成功");
                         FileUtils.cleanDirectory(file.getParentFile());
                         return jsonNode;
                     } catch (JsonParseException e) {
-                        log.info("json解析失败"+e.getMessage());
+                        LogUtil.getLogger().info("json解析失败"+e.getMessage());
                     }
                     a=System.currentTimeMillis();
                 }

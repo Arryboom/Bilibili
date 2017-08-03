@@ -2,7 +2,6 @@ package org.pqh.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.Logger;
 import org.jsoup.Connection;
 import org.jsoup.nodes.Document;
 import org.pqh.dao.BiliDao;
@@ -12,7 +11,6 @@ import org.pqh.entity.Cid;
 import org.pqh.entity.Save;
 import org.pqh.entity.history.Data;
 import org.pqh.entity.statistics.AvCount;
-import org.pqh.task.TaskQuery;
 import org.pqh.util.*;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
@@ -26,16 +24,13 @@ import java.util.List;
 
 @Service
 public class InsertService{
-	private static Logger log= Logger.getLogger(InsertService.class);
+
 	@Resource
 	private BiliDao biliDao;
 	@Resource
 	private BiliHistoryDao biliHistoryDao;
-	@Resource
-	private TaskQuery taskQuery;
 
-	public static boolean stop=false;
-
+	public static boolean stop =false;
 	public InsertService() {
 
 	}
@@ -60,16 +55,13 @@ public class InsertService{
 				bili.setTypename2(BiliUtil.getBq(bili.getTypename()));
 				bili.setPartid(page);
 
-				taskQuery.setBili(bili);
-				ThreadUtil.excute(taskQuery);
-
 				try{
 					if(page==1){
 						biliDao.insertBili(bili);
 					}
 					biliDao.insertCid(bili);
 					biliDao.updateSave(new Save(id,aid+":"+page,new Timestamp(System.currentTimeMillis()),false));
-					log.debug("最新AV:"+ApiUrl.AV.getUrl(new Object[]{aid,page})+"更新于"+ TimeUtil.formatDate(new Date(bili.getCreated()*1000),null));
+					LogUtil.getLogger().debug("最新AV:"+ApiUrl.AV.getUrl(new Object[]{aid,page})+"更新于"+ TimeUtil.formatDate(new Date(bili.getCreated()*1000)));
 				}
 				catch(DuplicateKeyException e){
 					if(e.getMessage().contains("insertBili")){
@@ -101,6 +93,10 @@ public class InsertService{
 
 	}
 
+	public void refreshToken(){
+
+	}
+
 	public void insertHistory() {
 		Save save=biliDao.selectSave(4).get(0);
 		int lastAid=0;
@@ -118,15 +114,17 @@ public class InsertService{
 				}
 				while(n.get("code").asInt()!=0);
 				if(n.get("code").asInt()==-500){
-					try {
-						Thread.sleep(60);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
+						ThreadUtil.sleep(60);
 				}
 				aid++;
 			}while (aid-count<=100);
-			JsonNode jsonNode = CrawlerUtil.jsoupGet(ApiUrl.biliHistory.s(1).getUrl(BiliUtil.access_key, 1, 100), CrawlerUtil.DataType.json, Connection.Method.GET);
+			JsonNode jsonNode=null;
+			do{
+				if(jsonNode!=null){
+					ThreadUtil.sleep(jsonNode.toString(),30);
+				}
+				jsonNode = CrawlerUtil.jsoupGet(ApiUrl.biliHistory.s(1).getUrl(BiliUtil.access_key, 1, 100), CrawlerUtil.DataType.json, Connection.Method.GET);
+			}while (jsonNode.get("code").asInt()!=0);
 			CrawlerUtil.jsoupGet(ApiUrl.biliHistory.s(2).getUrl("clear"), CrawlerUtil.DataType.json, Connection.Method.POST,"access_key");
 
 			if(jsonNode.get("data")==null||jsonNode.get("data").size()==0){
@@ -148,7 +146,7 @@ public class InsertService{
 					while (iterator.hasNext()) {
 						Object obj  ;
 						String key = iterator.next();
-						if ("type,device,progress,page,bangumi".contains(key)) {
+						if ("type,device,progress,page,bangumi,count".contains(key)) {
 							continue;
 						}
 						JsonNode keys = node.get(key);
@@ -168,7 +166,7 @@ public class InsertService{
 					Timestamp timestamp=new Timestamp(data.getCtime()*1000);
 					String date=TimeUtil.formatDate(timestamp,TimeUtil.DATE);
 					String dataTime=TimeUtil.formatDate(timestamp,TimeUtil.DATETIME);
-					log.debug("dataTime="+dataTime);
+					LogUtil.getLogger().debug("dataTime="+dataTime);
 					try {
 						biliHistoryDao.insertHistory(data);
 						List<AvCount> avCounts= biliDao.selectAvCount(date,null);
@@ -200,6 +198,7 @@ public class InsertService{
 		Document document = CrawlerUtil.jsoupGet(url, CrawlerUtil.DataType.domcument, Connection.Method.GET);
 		if(document==null){
 			Save save=biliDao.selectSave(2).get(0);
+			save.setLatest(true);
 			biliDao.updateSave(save);
 			return;
 		}

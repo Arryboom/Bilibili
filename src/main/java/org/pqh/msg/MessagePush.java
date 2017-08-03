@@ -1,10 +1,9 @@
-package org.pqh.qq;
+package org.pqh.msg;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.utils.DateUtils;
-import org.apache.log4j.Logger;
 import org.jsoup.Connection;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -15,10 +14,8 @@ import org.pqh.entity.Bangumi;
 import org.pqh.entity.Bdu;
 import org.pqh.entity.Param;
 import org.pqh.entity.Tsdm;
-import org.pqh.task.DynamicTimer;
 import org.pqh.util.*;
 import org.springframework.dao.DuplicateKeyException;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -33,12 +30,20 @@ import static org.pqh.util.SpringContextHolder.biliDao;
  */
 @Component
 public class MessagePush{
-    private static Logger log = Logger.getLogger(MessagePush.class);
-
 
     public static List<Tsdm> todayTsdms;
 
     private static Map<String, Map<String, String>> pushUrl = new HashMap<>();
+
+    public static Map<String,Boolean> flag;
+
+    static {
+        flag=new HashMap<>();
+        flag.put("acgdoge",false);
+        flag.put("ithome",false);
+        flag.put("rank", false);
+        flag.put("flag",false);
+    }
 
     public void put(String animeName,String title, String videoSite, String url) {
         Map<String, String> map =pushUrl.get(animeName);
@@ -47,7 +52,6 @@ public class MessagePush{
         }
         String value = map.get(videoSite);
         if (value == null) {
-            DoSoming.messagePush(animeName+"\t"+title+"\t已更新,传送门："+url);
             map.put(videoSite, url);
             pushUrl.put(animeName, map);
         }
@@ -55,7 +59,7 @@ public class MessagePush{
 
     //    @Resource
 //    private BiliDao biliDao;
-    @Scheduled(cron = "0 0 0/1 * * ?")
+
     public void acgdoge() {
 
 
@@ -85,18 +89,16 @@ public class MessagePush{
                     tags.add(e.text());
                 }
                 String msg = type + "\t\"" + title.text() + "\"\t传送门：" + href + "\n标签：" + tags;
-                log.info(msg);
+                LogUtil.getLogger().info(msg);
                 msgs.add(msg);
             }
         }
-        if (DoSoming.flag.get("acgdoge")) {
-            DoSoming.messagePush(msgs);
-        }
+
         param.setValue(a + "");
         biliDao.updateParam(param);
     }
 
-    @Scheduled(cron = "0 0/10 * * * ?")
+
     public void ithome() {
 
         Document document = null;
@@ -119,13 +121,11 @@ public class MessagePush{
             a = Integer.parseInt(href.substring(href.lastIndexOf("/") + 1).replaceAll("\\D+", ""));
             if (a > b) {
                 String msg = text + "\t传送门：" + href;
-                log.info(msg);
+                LogUtil.getLogger().info(msg);
                 msgs.add(msg);
             }
         }
-        if (DoSoming.flag.get("ithome")) {
-            DoSoming.messagePush(msgs);
-        }
+
         param.setValue(a + "");
         biliDao.updateParam(param);
     }
@@ -141,8 +141,8 @@ public class MessagePush{
             do {
                 as = document.select(".part02_list li:contains(" + name + ")");
                 if(as.size()!=1){
-                    log.info(as);
-                    log.info("无法准确从优酷新番放松表找到这部番剧："+name+"请输入别名");
+                    LogUtil.getLogger().info(String.valueOf(as));
+                    LogUtil.getLogger().info("无法准确从优酷新番放松表找到这部番剧："+name+"请输入别名");
                     Scanner sc=new Scanner(System.in);
                     name=sc.nextLine();
                 }else{
@@ -160,19 +160,23 @@ public class MessagePush{
 
     public void parseYouku(Tsdm tsdm) {
         if(tsdm.getYoukuId()==null){
-            log.info(tsdm.getAnimeName()+"\tyoukuId没有入库无法获取番剧更新信息");
+            LogUtil.getLogger().info(tsdm.getAnimeName()+"\tyoukuId没有入库无法获取番剧更新信息");
             return;
         }
         JsonNode jsonNode=CrawlerUtil.jsoupGet(ApiUrl.youku.getUrl(tsdm.getYoukuId()),CrawlerUtil.DataType.json, Connection.Method.GET);
-        jsonNode=jsonNode.get("data").get("videos").get("list");
-        jsonNode=jsonNode.get(jsonNode.size()-1);
+        jsonNode=JsonUtil.findNodeByPath(jsonNode,"data","videos","list");
+        if(jsonNode!=null&&jsonNode.size()>0){
+            jsonNode=jsonNode.get(jsonNode.size()-1);
+        }else{
+            return;
+        }
         String title=jsonNode.get("title").asText();
         String encodevid=jsonNode.get("encodevid").asText();
         String url=ApiUrl.youkuPlay.getUrl(encodevid);
 
         if(StringUtils.isEmpty(tsdm.getYoukuUrl())||!tsdm.getYoukuUrl().equals(url)){
             tsdm.setYoukuUrl(url);
-            log.info(tsdm.getAnimeName()+" "+title+"传送门："+url);
+            LogUtil.getLogger().info(tsdm.getAnimeName()+" "+title+"传送门："+url);
             bduDao.updateTsdm(tsdm);
             put(tsdm.getAnimeName(),title,"youku",url);
         }
@@ -189,8 +193,8 @@ public class MessagePush{
             do{
                 bangumis=biliDao.selectBangumi(new Bangumi(null,null,name));
                 if(bangumis.size()!=1){
-                    log.info(bangumis);
-                    log.info("无法准确从bili番剧表找到这部番剧："+name+"请输入别名");
+                    LogUtil.getLogger().info(String.valueOf(bangumis));
+                    LogUtil.getLogger().info("无法准确从bili番剧表找到这部番剧："+name+"请输入别名");
                     Scanner sc=new Scanner(System.in);
                     name=sc.nextLine();
                 }else{
@@ -207,15 +211,16 @@ public class MessagePush{
 
     public void parseBilibili(Tsdm tsdm) {
         if(tsdm.getBiliId()==null){
-            log.info(tsdm.getAnimeName()+"\tbiliId没有入库无法获取番剧更新信息");
+            LogUtil.getLogger().info(tsdm.getAnimeName()+"\tbiliId没有入库无法获取番剧更新信息");
             return;
         }
         JsonNode jsonNode = CrawlerUtil.jsoupGet(ApiUrl.bangumiAnime.getUrl(tsdm.getBiliId()), CrawlerUtil.DataType.json, Connection.Method.GET);
-        if(jsonNode==null||jsonNode.get("result")==null){
-            log.error(tsdm.getAnimeName()+"无法获取专题信息");
+        if(jsonNode==null){
+            return;
         }
-        jsonNode = jsonNode.get("result").get("episodes");
-        if (jsonNode.size() > 0) {
+        jsonNode = JsonUtil.findNodeByPath(jsonNode,"result","episodes");
+
+        if (jsonNode!=null&&jsonNode.size() > 0) {
             jsonNode = jsonNode.get(0);
             String av = jsonNode.get("av_id").asText();
             String index_title = jsonNode.get("index_title").asText();
@@ -225,11 +230,11 @@ public class MessagePush{
                 tsdm.setBiliUrl(url);
                 bduDao.updateTsdm(tsdm);
                 String msg = tsdm.getAnimeName() + "\t已更新第" + index + "集\t" + index_title + "\n传送门:" + url;
-                log.info(msg);
+                LogUtil.getLogger().info(msg);
                 put(tsdm.getAnimeName(), index_title, "Bilibili", url);
             }
         } else {
-            log.info(tsdm.getAnimeName() + "\t没开播");
+            LogUtil.getLogger().info(tsdm.getAnimeName() + "\t没开播");
         }
 
     }
@@ -247,8 +252,8 @@ public class MessagePush{
             do{
                 as=elements.select(":contains("+name+")");
                 if(as.size()!=1){
-                    log.info(as);
-                    log.info("无法准确从爱奇艺新番放松表找到这部番剧："+name+"请输入别名");
+                    LogUtil.getLogger().info(String.valueOf(as));
+                    LogUtil.getLogger().info("无法准确从爱奇艺新番放松表找到这部番剧："+name+"请输入别名");
                     Scanner sc=new Scanner(System.in);
                     name=sc.next();
                 }else{
@@ -266,7 +271,7 @@ public class MessagePush{
 
     public void parseiqiyi(Tsdm tsdm) {
         if(tsdm.getIqiyiId()==null){
-            log.info(tsdm.getAnimeName()+"\tiqiyiID没有入库无法获取番剧更新信息");
+            LogUtil.getLogger().info(tsdm.getAnimeName()+"\tiqiyiID没有入库无法获取番剧更新信息");
             return;
         }
         Document document=CrawlerUtil.jsoupGet(ApiUrl.iqiyiPlay.getUrl(tsdm.getIqiyiId()),CrawlerUtil.DataType.domcument, Connection.Method.GET);
@@ -278,12 +283,12 @@ public class MessagePush{
             tsdm.setIqiyiUrl(href);
             bduDao.updateTsdm(tsdm);
             String msg = title + "\t已更新，播放地址：" + href;
-            log.info(msg);
+            LogUtil.getLogger().info(msg);
             put(tsdm.getAnimeName(), title, "iqiyi", href);
         }
     }
 
-    @Scheduled(cron = "0 0/10 * * * ?")
+
     public void parseTsdm() {
         Tsdm t=new Tsdm();
 //        t.setAnimeName("末日时在做什么？有没有空？可以来拯救吗？");
@@ -297,7 +302,7 @@ public class MessagePush{
 //            if(f){
 //                continue;
 //            }
-            log.info(tsdm);
+            LogUtil.getLogger().debug("",tsdm);
             String url = tsdm.getTsdmUrl();
             Document postmessage = CrawlerUtil.jsoupGet(url, CrawlerUtil.DataType.domcument, Connection.Method.GET);
             //
@@ -320,7 +325,7 @@ public class MessagePush{
 
 
                 String lastUpdate[] = a.text().split(" ");
-                log.debug(Arrays.asList(lastUpdate));
+                LogUtil.getLogger().debug("",Arrays.asList(lastUpdate));
 
                 tsdm.setIndex(i);
                 tsdm.setLastUpdateTimes(lastUpdate[3] + " " + lastUpdate[4]);
@@ -331,13 +336,11 @@ public class MessagePush{
                     Date now = TimeUtil.parseDate(lastUpdate[3] + " " + lastUpdate[4], format);
                     if(result.getTime()<now.getTime()){
                         String num = a.parent().attr("id").replaceAll("\\D", "");
-                        log.info("天使论坛已经更新该番剧"+tsdm.getAnimeName()+"资源，传送门："+tsdm.getTsdmUrl()+"#"+num);
-//                        DoSoming.messagePush(msg);
+                        LogUtil.getLogger().info("天使论坛已经更新该番剧"+tsdm.getAnimeName()+"资源，传送门："+tsdm.getTsdmUrl()+"#"+num);
+
                     }else{
                         continue;
                     }
-                }else{
-//                    continue;
                 }
 
                 //具体资源链接。
@@ -358,7 +361,7 @@ public class MessagePush{
                 }
                 boolean flag=subs.size()>0;
                 List list=flag?subs:text;
-                log.info("捕捉到的字幕组信息：\n"+list);
+                LogUtil.getLogger().info("捕捉到的字幕组信息：\n"+list);
                 int index = 0;
                 List<Node> children = td.childNodes();
                 //遍历楼层里面的所有百度云链接
@@ -398,7 +401,7 @@ public class MessagePush{
                             }
                         }
                     }else{
-                        log.error("找不到字幕组信息");
+                        LogUtil.getLogger().error("找不到字幕组信息");
                     }
 
                     String episode=null;
@@ -422,8 +425,6 @@ public class MessagePush{
                     String href = pan.attr("href");
                     String password = null;
 
-
-
                     if(pan.nextElementSibling()!=null&&"font".equals(pan.nextElementSibling().tagName())){
                         password=pan.nextElementSibling().text();
                     }else{
@@ -436,15 +437,14 @@ public class MessagePush{
                     password = StringUtil.matchStr(password,"\\w{4}",String.class);
 
                     if(password==null){
-                        log.error("没有密码");
+                        LogUtil.getLogger().error("没有密码");
                     }
 
                     Bdu bdu=new Bdu(href,password,subtitle,episode,remark,tsdm.getAnimeName());
-                    log.info(bdu);
 
                     try {
                         bduDao.insertBdu(bdu);
-                        DoSoming.messagePush(tsdm.getAnimeName() + "资源已更新：" + bdu);
+                        LogUtil.getLogger().info(String.valueOf(bdu));
                     } catch (DuplicateKeyException e) {
                         bduDao.updateBdu(bdu);
                     }
@@ -470,7 +470,7 @@ public class MessagePush{
             if (title.equals("参见")) {
                 break;
             }
-            log.info("title=" + title);
+            LogUtil.getLogger().info("title=" + title);
             Element dl = span.parent().nextElementSibling();
             int i = 1;
             while (!dl.tagName().equals("dl")) {
@@ -479,7 +479,7 @@ public class MessagePush{
             }
 
             String time[] = dl.select("dd:eq(1)").text().split(" ");
-            log.info("时间：" + Arrays.asList(time));
+            LogUtil.getLogger().info("时间：" + Arrays.asList(time));
             //格式化开播时间
             String playtime = time[0].replace("起", "");
             Date formatPlayTime = DateUtils.parseDate(playtime, new String[]{"yyyy年MM月dd日", "yyyy年MM月"});
@@ -489,27 +489,27 @@ public class MessagePush{
             //如果中国大陆有放送权提取放松地址信息
             if (dl.text().contains("中国大陆")) {
                 copyright = dl.select("dd:contains(中国大陆)").first().text().split("：")[1];
-                log.info("中国大陆放送权：" + copyright);
+                LogUtil.getLogger().info("中国大陆放送权：" + copyright);
             }
             Tsdm tsdm = new Tsdm(title, formatPlayTime, updatetime, copyright);
 
             try {
                 bduDao.insertTsdm(tsdm);
             } catch (DuplicateKeyException e) {
-                log.error("异常信息" + e.getMessage());
+                LogUtil.getLogger().error("异常信息" + e.getMessage());
             }
 
         }
     }
 
-    @Scheduled(cron = "0 0/10 * * * ?")
+
     public void check() {
         if(todayTsdms==null){
             doUpdate();
         }
         for (Tsdm tsdm : todayTsdms) {
             String copyrights[] = tsdm.getCopyright().split("／");
-            log.info(tsdm.getAnimeName() + "版权:" + Arrays.asList(copyrights));
+            LogUtil.getLogger().debug(tsdm.getAnimeName() + "版权:" + Arrays.asList(copyrights));
             if (copyrights != null) {
                 List<String> strings = Arrays.asList(copyrights);
                 if (strings.contains("Bilibili")) {
@@ -526,7 +526,7 @@ public class MessagePush{
     }
 
 
-    @Scheduled(cron = "0 0 0/24 * * ?")
+
     public void doUpdate() {
         Date date = new Date();
         String e = TimeUtil.formatDate(date, "E").replace("星期", "每周");
@@ -545,20 +545,14 @@ public class MessagePush{
             }
             strings.add(tsdm.toString());
         }
-        log.info(strings);
-        DoSoming.messagePush(strings);
+        LogUtil.getLogger().info(String.valueOf(strings));
+
     }
 
 
 
     public static void main(String[] args) {
-        DynamicTimer dynamicTimer=new DynamicTimer(()->{
-            log.info(123);
-        },"0/1 * * * * ?");
-        int i=10;
-        while (i-->0){
-            ThreadUtil.sleep(null,1);
-        }
+
     }
 
 }

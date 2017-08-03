@@ -1,26 +1,31 @@
 package org.pqh.util;
 
-import org.apache.log4j.Logger;
-
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
+import javax.crypto.Mac;
+import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.security.DigestException;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.Map;
 import java.util.zip.CRC32;
 import java.util.zip.CheckedInputStream;
+
+import static org.pqh.util.StringUtil.getOrderByLexicographic;
 
 /**
  * Created by 10295 on 2016/7/16.
  * 加密工具类
  */
 public class AlgorithmUtil {
-    private static Logger log=Logger.getLogger(AlgorithmUtil.class);
+
     public final static String MD5(String s) {
         char hexDigits[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
         try {
@@ -45,6 +50,61 @@ public class AlgorithmUtil {
             e.printStackTrace();
         }
        return null;
+    }
+
+    /**
+     * SHA1 安全加密算法
+     * @param maps 参数key-value map集合
+     * @return
+     * @throws DigestException
+     */
+    public static String SHA1(Map<String,Object> maps) throws DigestException {
+        //获取信息摘要 - 参数字典排序后字符串
+        String decrypt = getOrderByLexicographic(maps);
+        try {
+            //指定sha1算法
+            MessageDigest digest = MessageDigest.getInstance("SHA-1");
+            digest.update(decrypt.getBytes());
+            //获取字节数组
+            byte messageDigest[] = digest.digest();
+            // Create Hex String
+            StringBuffer hexString = new StringBuffer();
+            // 字节数组转换为 十六进制 数
+            for (int i = 0; i < messageDigest.length; i++) {
+                String shaHex = Integer.toHexString(messageDigest[i] & 0xFF);
+                if (shaHex.length() < 2) {
+                    hexString.append(0);
+                }
+                hexString.append(shaHex);
+            }
+            return hexString.toString().toUpperCase();
+
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            throw new DigestException("签名错误！");
+        }
+    }
+
+    /**
+     * 使用 HMAC-SHA1 签名方法对对encryptText进行签名
+     * @param encryptText 被签名的字符串
+     * @param encryptKey  密钥
+     * @return
+     * @throws Exception
+     */
+    public static byte[] HmacSHA1Encrypt(String encryptText, String encryptKey) throws Exception
+    {
+        byte[] data=encryptKey.getBytes("UTF-8");
+        //根据给定的字节数组构造一个密钥,第二参数指定一个密钥算法的名称
+        SecretKey secretKey = new SecretKeySpec(data, "HmacSHA1");
+        //生成一个指定 Mac 算法 的 Mac 对象
+        Mac mac = Mac.getInstance("HmacSHA1");
+        //用给定密钥初始化 Mac 对象
+        mac.init(secretKey);
+
+        byte[] text = encryptText.getBytes("UTF-8");
+        //完成 Mac 操作
+        return mac.doFinal(text);
     }
 
     /**

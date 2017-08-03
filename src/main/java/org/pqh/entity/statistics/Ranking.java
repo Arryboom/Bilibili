@@ -39,6 +39,6 @@ public class Ranking {
     public Ranking(Timestamp key, String value) {
         this.key = key;
         this.value = value;
-        this.formatTime=TimeUtil.formatDate(key,null);
+        this.formatTime=TimeUtil.formatDate(key);
     }
 }

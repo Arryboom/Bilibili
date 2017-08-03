@@ -1,6 +1,7 @@
 package org.pqh.task;
 
-import org.apache.log4j.Logger;
+import org.pqh.service.InsertService;
+import org.pqh.util.LogUtil;
 
 import java.util.Observable;
 
@@ -19,8 +20,6 @@ public class TaskBili extends Observable implements Runnable{
     private int page;
 
     private int $aid;
-
-    private static Logger log= Logger.getLogger(TaskBili.class);
 
     public TaskBili() {
         this.id=1;
@@ -52,11 +51,14 @@ public class TaskBili extends Observable implements Runnable{
 
         try {
             if(id==4) {
+                InsertService.stop=false;
                 insertService.insertHistory();
             }else {
                 insertService.insertBili(id, aid, page, $aid);
             }
-        }finally {
+        } catch (Exception e){
+            LogUtil.getLogger().error("爬虫任务意外中止，异常信息："+e.getMessage());
+        } finally{
             doBusiness(null);
         }
     }

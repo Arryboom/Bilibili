@@ -255,6 +255,8 @@ INSERT INTO bilibili.save(id,bilibili)VALUES(2,'1');
 INSERT INTO bilibili.save(id,bilibili)VALUES(4,'1');
 #配置参数初始化
 
+INSERT INTO bilibili.param (`key`, value, `desc`) VALUES ('163_password', '', '#163邮箱密码');
+INSERT INTO bilibili.param (`key`, value, `desc`) VALUES ('163_username', '', '#163邮箱帐号');
 INSERT INTO bilibili.param (`key`, value, `desc`) VALUES ('access_key', '', '#');
 
 INSERT INTO bilibili.param (`key`, value, `desc`) VALUES ('DedeUserID', '', '#');
@@ -271,7 +273,7 @@ INSERT INTO bilibili.param (`key`, value, `desc`) VALUES ('baiducookie', '', '#�
 INSERT INTO bilibili.param (`key`, value, `desc`) VALUES ('biliAvPlay', '0 0 0/24 * * ?', '#刷新哔哩哔哩正版视频播放量频率');
 INSERT INTO bilibili.param (`key`, value, `desc`) VALUES ('danmu%', '40', '#弹幕池弹幕数下限');
 INSERT INTO bilibili.param (`key`, value, `desc`) VALUES ('dbbackup', ' 0 0 0 ? * 1', '#数据库备份频率');
-INSERT INTO bilibili.param (`key`, value, `desc`) VALUES ('dbpassword', '0d4h0a3a', '#数据库密码');
+INSERT INTO bilibili.param (`key`, value, `desc`) VALUES ('dbpassword', '', '#数据库密码');
 INSERT INTO bilibili.param (`key`, value, `desc`) VALUES ('dburl', 'jdbc:mysql://localhost:3306/bilibili?serverTimezone=UTC&&useSSL=true', '#数据库连接');
 INSERT INTO bilibili.param (`key`, value, `desc`) VALUES ('dbusername', 'root', '#数据库账号');
 INSERT INTO bilibili.param (`key`, value, `desc`) VALUES ('driverClassName', 'com.mysql.cj.jdbc.Driver', '#数据库驱动');
